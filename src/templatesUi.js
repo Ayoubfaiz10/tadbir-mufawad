@@ -147,7 +147,7 @@
 
   function rowHtml(x) {
     const actions = [
-      `<button class="row-btn" data-tpl-action="pdf" data-tpl-id="${x.id}" title="${state.lang === 'fr' ? 'Générer PDF' : 'توليد PDF'}"><i class="fas fa-file-pdf"></i></button>`,
+      `<button class="row-btn" data-tpl-action="pdf" data-tpl-id="${x.id}" data-tpl-ver="${x.current_version_id || ''}" title="${state.lang === 'fr' ? 'Générer PDF' : 'توليد PDF'}"><i class="fas fa-file-pdf"></i></button>`,
       `<button class="row-btn" data-tpl-action="view" data-tpl-id="${x.id}" title="${state.lang === 'fr' ? 'Détails' : 'التفاصيل'}"><i class="fas fa-eye"></i></button>`
     ];
     if (state2.canManage && !x.archived) {
@@ -567,6 +567,25 @@
     renderPreview();
   }
 
+  async function openPdfFromTemplate(templateId) {
+    const row = state2.rows.find((r) => r.id === templateId);
+    const ver = row && row.current_version_id ? row.current_version_id : 0;
+    if (ver) {
+      openPdfFromVersion(ver);
+      return;
+    }
+    try {
+      const d = await API.tplGet(templateId);
+      if (d && d.current_version_id) {
+        openPdfFromVersion(d.current_version_id);
+      } else {
+        toast(state.lang === 'fr' ? "Ce modèle n'a pas encore de version" : 'لا توجد نسخة لهذا النموذج بعد', true);
+      }
+    } catch (e) {
+      toast(e.message || e, true);
+    }
+  }
+
   function closeView() {
     byId('tpl-view-backdrop').classList.remove('show');
   }
@@ -608,7 +627,7 @@
       const row = state2.rows.find((r) => r.id === id);
       if (act === 'view') openView(id);
       else if (act === 'edit') openEditor(row);
-      else if (act === 'pdf') openPdfFromVersion(id);
+      else if (act === 'pdf') openPdfFromTemplate(id);
       else if (state2.canManage && row) {
         if (act === 'dup') duplicateTemplate(id);
         else if (act === 'active') toggleActive(id, !row.active);

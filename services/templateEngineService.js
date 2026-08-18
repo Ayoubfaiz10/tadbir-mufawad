@@ -164,6 +164,16 @@ function buildContext(detail, opts = {}) {
   return ctx;
 }
 
+/* ---------- تعقيم قيمة متغير قبل إدراجها في HTML ---------- */
+function escapeHtml(v) {
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* ---------- استبدال المتغيرات في المحتوى ---------- */
 function resolveContent(content, context = {}, opts = {}) {
   const strict = opts.strict === true;
@@ -178,7 +188,7 @@ function resolveContent(content, context = {}, opts = {}) {
     if (val === undefined || val === null) {
       return strict ? whole : '';
     }
-    return String(val);
+    return escapeHtml(val);
   });
 }
 
@@ -195,5 +205,6 @@ module.exports = {
   resolveContent,
   renderHtml,
   fmtDate,
-  toFixedAmount
+  toFixedAmount,
+  escapeHtml
 };

@@ -10,13 +10,21 @@
   },
   "author": "مكتب المفوض القضائي",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ayoubfaiz10/tadbir-mufawad.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "ma.casablanca.huissier.gestion",
     "productName": "مفوض",
+    "publish": null,
     "files": [
       "main.js",
       "preload.js",
@@ -38,9 +46,11 @@
     }
   },
   "allowScripts": {
-    "electron@33.4.11": true
+    "electron@43.4.0": true,
+    "electron-winstaller@5.4.0": true
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "sql.js": "^1.14.2"
   }
 }

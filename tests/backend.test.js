@@ -251,6 +251,9 @@ async function main() {
   const ctx = engine.buildContext({ dossier: { numero: 'D1', demandeur: 'أحمد' }, parties: [{ name: 'X', cin: 'C123' }] }, { lang: 'ar' });
   assert(ctx.dossier_number === 'D1' && ctx.party_cin === 'C123', 'بناء السياق من الملف والأطراف');
   assert(engine.resolveContent('نص {{dossier_number}} و {{unknown_var}}', ctx) === 'نص D1 و ', 'استبدال المتغيرات (غير معروف = فارغ)');
+  const xssVal = '<script>alert(1)</script>" onmouseover="x';
+  const xssOut = engine.resolveContent('{{notes}}', { notes: xssVal });
+  assert(!xssOut.includes('<script>') && xssOut.includes('&lt;script&gt;'), 'قيم المتغيرات تُعقّم قبل الإدراج في HTML');
   assert(engine.resolveContent('{{unknown_var}}', ctx, { strict: true }) === '{{unknown_var}}', 'حفظ غير المعروف في وضع Strict');
 
   const tpl = tplSvc.add({
