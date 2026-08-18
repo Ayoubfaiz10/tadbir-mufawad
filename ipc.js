@@ -151,12 +151,59 @@ function register() {
   });
 
   /* ---------- Auth ---------- */
-  genHandle('auth:login', (username, password) => auth.login(str(username, 60), str(password, 200)));
+  /* Rate limit على محاولات الدخول: 10 فشل في 5 دقائق = قفل 5 دقائق أخرى */
+  const loginAttempts = new Map();
+  function checkLoginGate(username) {
+    const rec = loginAttempts.get(username);
+    if (!rec) return null;
+    const now = Date.now();
+    if (rec.lockedUntil && now < rec.lockedUntil) {
+      return Math.ceil((rec.lockedUntil - now) / 1000);
+    }
+    if (now - rec.firstFail > 5 * 60 * 1000) {
+      loginAttempts.delete(username);
+      return null;
+    }
+    return null;
+  }
+  function recordLoginFailure(username) {
+    const now = Date.now();
+    const rec = loginAttempts.get(username) || { fails: 0, firstFail: now, lockedUntil: 0 };
+    if (now - rec.firstFail > 5 * 60 * 1000) { rec.fails = 0; rec.firstFail = now; }
+    rec.fails += 1;
+    if (rec.fails >= 10) {
+      rec.lockedUntil = now + 5 * 60 * 1000;
+      rec.fails = 0;
+    }
+    loginAttempts.set(username, rec);
+  }
+  function resetLoginGate(username) {
+    loginAttempts.delete(username);
+  }
+  genHandle('auth:login', (username, password) => {
+    const u = str(username, 60);
+    const remaining = checkLoginGate(u);
+    if (remaining) throw new Error('AUTH:LOCKED:' + remaining);
+    try {
+      const user = auth.login(u, str(password, 200));
+      resetLoginGate(u);
+      return user;
+    } catch (e) {
+      if (String(e.message || e).startsWith('AUTH:WRONG_PASSWORD') || String(e.message || e).startsWith('AUTH:USER_NOT_FOUND')) {
+        recordLoginFailure(u);
+      }
+      throw e;
+    }
+  });
   genHandle('auth:logout', () => auth.logout());
   genHandle('auth:changePassword', (currentPassword, newPassword) => auth.changePassword(str(currentPassword, 200), str(newPassword, 200)));
   genHandle('auth:current', () => ({ user: auth.getCurrentUser(), needsSetup: auth.needsSetup() }));
   genHandle('auth:setupInitial', (username, displayName, password) => auth.setupInitial(str(username, 60), str(displayName, 120), str(password, 200)));
   genHandle('auth:users', () => auth.listUsers());
+  genHandle('auth:userCreate', (input) => auth.createUser(str(input.username, 60), str(input.displayName, 120), str(input.role, 20), str(input.password, 200)));
+  genHandle('auth:userSetActive', (id, active) => auth.setUserActive(int(id), bool(active)));
+  genHandle('auth:userDelete', (id) => auth.deleteUser(int(id)));
+  genHandle('auth:userResetPassword', (id, newPassword) => auth.resetPassword(int(id), str(newPassword, 200)));
   genHandle('auth:isAuthorized', (action) => auth.isAuthorized(str(action)));
 
   /* ---------- الإعدادات والتكوين ---------- */

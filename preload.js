@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld('appAPI', {
   authSetupInitial: expose('auth:setupInitial'),
   authCurrent: expose('auth:current'),
   authUsers: expose('auth:users'),
+  authUserCreate: expose('auth:userCreate'),
+  authUserSetActive: expose('auth:userSetActive'),
+  authUserDelete: expose('auth:userDelete'),
+  authUserResetPassword: expose('auth:userResetPassword'),
   authIsAuthorized: expose('auth:isAuthorized'),
 
   // الإعدادات

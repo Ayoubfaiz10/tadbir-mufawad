@@ -742,11 +742,46 @@
               <i class="fas fa-database"></i>
               <div>
                 <strong data-i18n="settings.data">البيانات والحفظ</strong>
-                <p data-i18n="settings.dataHint">تُحفظ البيانات تلقائياً في مجلد بيانات التطبيق (JSON).</p>
+                <p data-i18n="settings.dataHint">تُحفظ البيانات تلقائياً في مجلد بيانات التطبيق (SQLite).</p>
               </div>
             </div>
             <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.about">حول التطبيق</h3></div>
             <p class="hint" data-i18n="settings.aboutText">إصدار 0.1.0 — بنية أساسية.</p>
+          </div>
+
+          <div class="card" id="users-card">
+            <div class="card-header"><h3 data-i18n="users.title">المستخدمون</h3></div>
+            <p class="hint" id="users-hint"></p>
+            <form id="user-form" class="form-grid">
+              <label><span data-i18n="users.username">اسم المستخدم</span><input type="text" id="user-username" autocomplete="off"></label>
+              <label><span data-i18n="users.displayName">الاسم الكامل</span><input type="text" id="user-displayname" autocomplete="off"></label>
+              <label><span data-i18n="users.role">الدور</span><select id="user-role"><option value="agent" data-i18n="auth.role.agent">وكيل المكتب</option><option value="admin" data-i18n="auth.role.admin">مدير</option></select></label>
+              <label><span data-i18n="users.initialPassword">كلمة المرور الأولية</span><input type="password" id="user-password" autocomplete="new-password"></label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i><span data-i18n="users.addPerson">إضافة مستخدم</span></button>
+                <span class="form-status" id="user-form-status"></span>
+              </div>
+            </form>
+            <div class="table-wrap" style="margin-top:14px">
+              <table class="data-table">
+                <thead><tr><th data-i18n="users.username">اسم المستخدم</th><th data-i18n="users.displayName">الاسم الكامل</th><th data-i18n="users.role">الدور</th><th data-i18n="users.status">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                <tbody id="users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" id="security-card">
+            <div class="card-header"><h3 data-i18n="settings.security">الأمان</h3></div>
+            <p class="hint" id="login-current-user"></p>
+            <form id="password-form" class="form-grid" style="grid-template-columns:1fr">
+              <label><span data-i18n="settings.currentPassword">كلمة المرور الحالية</span><input type="password" id="pw-current" autocomplete="current-password"></label>
+              <label><span data-i18n="settings.newPassword">كلمة المرور الجديدة (6 أحرف على الأقل)</span><input type="password" id="pw-new" autocomplete="new-password"></label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i><span data-i18n="settings.savePassword">تغيير كلمة المرور</span></button>
+                <span class="form-status" id="pw-status"></span>
+              </div>
+            </form>
+            <button class="btn btn-ghost" id="logout-btn" style="margin-top:12px"><i class="fas fa-right-from-bracket"></i><span data-i18n="settings.logout">تسجيل الخروج</span></button>
           </div>
         </div>
       </section>
@@ -934,6 +969,38 @@
         <button class="btn btn-ghost" id="pv-editor-cancel"><i class="fas fa-xmark"></i><span data-i18n="common.cancel">إلغاء</span></button>
         <button class="btn btn-ghost" id="pv-editor-preview"><i class="fas fa-eye"></i> <span data-i18n="pvs.editor.preview">معاينة</span></button>
         <button class="btn btn-primary" id="pv-editor-save"><i class="fas fa-save"></i> <span data-i18n="pvs.editor.save">حفظ</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LOGIN OVERLAY ==================== -->
+  <div class="modal-backdrop" id="login-backdrop" style="z-index:9999">
+    <div class="modal modal-sm" id="login-modal">
+      <div class="modal-header">
+        <h3 data-i18n="auth.title">تسجيل الدخول</h3>
+      </div>
+      <div class="modal-body">
+        <div class="login-brand">
+          <i class="fas fa-scale-balanced"></i>
+          <strong data-i18n="appName">تسيير المفوض القضائي</strong>
+        </div>
+
+        <form id="login-form" class="form-grid" style="grid-template-columns:1fr">
+          <label><span data-i18n="auth.username">اسم المستخدم</span><input type="text" id="login-username" autocomplete="username"></label>
+          <label><span data-i18n="auth.password">كلمة المرور</span><input type="password" id="login-password" autocomplete="current-password"></label>
+          <p class="form-status" id="login-error" style="color:var(--danger)"></p>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-right-to-bracket"></i><span data-i18n="auth.enter">دخول</span></button>
+        </form>
+
+        <form id="setup-form" class="form-grid" style="grid-template-columns:1fr;display:none">
+          <p class="hint" data-i18n="auth.setupHint">أنشئ حساب مسؤول المكتب: اسم المستخدم وكلمة المرور اللذان ستستعملهما للدخول</p>
+          <label><span data-i18n="auth.username">اسم المستخدم</span><input type="text" id="setup-username" value="admin" autocomplete="username"></label>
+          <label><span data-i18n="auth.displayName">الاسم الكامل</span><input type="text" id="setup-displayname" autocomplete="name"></label>
+          <label><span data-i18n="auth.password">كلمة المرور</span><input type="password" id="setup-password" autocomplete="new-password"></label>
+          <label><span data-i18n="auth.confirmPassword">تأكيد كلمة المرور</span><input type="password" id="setup-password2" autocomplete="new-password"></label>
+          <p class="form-status" id="setup-error" style="color:var(--danger)"></p>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-user-shield"></i><span data-i18n="auth.createAccount">إنشاء الحساب</span></button>
+        </form>
       </div>
     </div>
   </div>

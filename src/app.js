@@ -517,6 +517,7 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
+  const esc = escapeHtml;
 
   /* ---------- Sidebar ---------- */
   function openSidebar() {
@@ -679,10 +680,151 @@
       o.addEventListener('click', () => setTheme(o.getAttribute('data-theme'), false));
     });
 
+    // Security: change password + logout
+    const pwForm = document.getElementById('password-form');
+    if (pwForm) {
+      pwForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cur = document.getElementById('pw-current');
+        const next = document.getElementById('pw-new');
+        const st = document.getElementById('pw-status');
+        st.textContent = '';
+        if (!next.value || next.value.length < 6) {
+          st.textContent = t('settings.passwordTooShort');
+          st.style.color = 'var(--danger)';
+          return;
+        }
+        try {
+          await API.authChangePassword(cur.value, next.value);
+          cur.value = '';
+          next.value = '';
+          st.textContent = t('settings.passwordChanged');
+          st.style.color = 'var(--success)';
+        } catch (err) {
+          st.textContent = authErrorText(err);
+          st.style.color = 'var(--danger)';
+        }
+      });
+    }
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', async () => {
+      try { await API.authLogout(); } catch (e) {}
+      location.reload();
+    });
+
+    // Users management (admin)
+    const userForm = document.getElementById('user-form');
+    if (userForm) {
+      userForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const st = document.getElementById('user-form-status');
+        st.textContent = '';
+        try {
+          await API.authUserCreate({
+            username: document.getElementById('user-username').value.trim(),
+            displayName: document.getElementById('user-displayname').value.trim(),
+            role: document.getElementById('user-role').value,
+            password: document.getElementById('user-password').value
+          });
+          document.getElementById('user-username').value = '';
+          document.getElementById('user-displayname').value = '';
+          document.getElementById('user-password').value = '';
+          st.textContent = t('users.added');
+          st.style.color = 'var(--success)';
+          renderUsers();
+        } catch (err) {
+          st.textContent = authErrorText(err);
+          st.style.color = 'var(--danger)';
+        }
+      });
+    }
+    const usersTbody = document.getElementById('users-tbody');
+    if (usersTbody) {
+      usersTbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-user-action]');
+        if (!btn) return;
+        const id = Number(btn.getAttribute('data-user-id'));
+        const act = btn.getAttribute('data-user-action');
+        if (act === 'toggle') {
+          const row = usersTbody.querySelector(`[data-user-id="${id}"]`);
+          API.authUserSetActive(id, !(btn.getAttribute('data-active') === '1'))
+            .then(renderUsers)
+            .catch((err) => toast(authErrorText(err), true));
+        } else if (act === 'reset') {
+          const np = prompt(t('users.resetPrompt'));
+          if (np == null) return;
+          API.authUserResetPassword(id, np)
+            .then(() => toast(t('users.resetDone')))
+            .catch((err) => toast(authErrorText(err), true));
+        } else if (act === 'del') {
+          if (!confirm(t('users.deleteConfirm'))) return;
+          API.authUserDelete(id)
+            .then(renderUsers)
+            .catch((err) => toast(authErrorText(err), true));
+        }
+      });
+    }
+
     // Menu export from main process
     API.onMenuExport((kind) => {
       API.exportCsv(kind);
     });
+  }
+
+  /* ---------- الأمان: تسجيل الدخول ---------- */
+  function authErrorText(err) {
+    const code = err && err.code ? String(err.code) : String((err && err.message) || err);
+    if (code.startsWith('AUTH:WRONG_PASSWORD')) return t('auth.wrongPassword');
+    if (code.startsWith('AUTH:USER_NOT_FOUND')) return t('auth.userNotFound');
+    if (code.startsWith('AUTH:INACTIVE_USER')) return t('auth.inactive');
+    if (code.startsWith('AUTH:PASSWORD_TOO_SHORT')) return t('settings.passwordTooShort');
+    if (code.startsWith('AUTH:USERNAME_REQUIRED')) return t('users.usernameRequired');
+    if (code.startsWith('AUTH:USERNAME_TAKEN')) return t('users.usernameTaken');
+    if (code.startsWith('AUTH:INVALID_ROLE')) return t('users.invalidRole');
+    if (code.startsWith('AUTH:CANNOT_SELF')) return t('users.cannotSelf');
+    if (code.startsWith('AUTH:LAST_ADMIN')) return t('users.lastAdmin');
+    if (code.startsWith('AUTH:ALREADY_SETUP')) return t('auth.alreadySetup');
+    if (code.startsWith('AUTH:LOCKED')) return t('auth.locked').replace('{s}', code.split(':')[1] || '');
+    if (code.startsWith('AUTH:LOGIN_REQUIRED')) return t('auth.notLoggedIn');
+    if (code.startsWith('AUTH:UNAUTHORIZED:')) return t('common.error');
+    return code;
+  }
+
+  function updateSecurityCard() {
+    const el = document.getElementById('login-current-user');
+    if (!el) return;
+    const u = state.currentUser;
+    el.textContent = (u && u.id)
+      ? `${t('settings.loggedAs')} ${u.display_name || u.username} (${t('auth.role.' + (u.role || 'guest'))})`
+      : t('auth.notLoggedIn');
+    const usersCard = document.getElementById('users-card');
+    if (usersCard) usersCard.style.display = (u && u.role === 'admin') ? '' : 'none';
+  }
+
+  /* ---------- إدارة المستخدمين (عرض الجدول) ---------- */
+  async function renderUsers() {
+    const tbody = document.getElementById('users-tbody');
+    if (!tbody) return;
+    try {
+      const rows = await API.authUsers();
+      const me = state.currentUser;
+      tbody.innerHTML = rows.map((u) => `
+        <tr>
+          <td>${esc(u.username)}${u.id === me.id ? ' <i class="fas fa-user-check" title="' + t('users.you') + '"></i>' : ''}</td>
+          <td>${esc(u.display_name || '—')}</td>
+          <td><span class="badge">${esc(t('auth.role.' + (u.role || 'agent')))}</span></td>
+          <td>${u.active ? t('users.active') : t('users.inactive')}</td>
+          <td>
+            ${u.id !== me.id ? `
+              <button class="row-btn" data-user-action="toggle" data-user-id="${u.id}" data-active="${u.active ? 1 : 0}" title="${u.active ? t('users.disable') : t('users.enable')}"><i class="fas fa-toggle-${u.active ? 'off' : 'on'}"></i></button>
+              <button class="row-btn" data-user-action="reset" data-user-id="${u.id}" title="${t('users.resetPassword')}"><i class="fas fa-key"></i></button>
+              <button class="row-btn del" data-user-action="del" data-user-id="${u.id}" title="${t('common.delete')}"><i class="fas fa-trash"></i></button>
+            ` : ''}
+          </td>
+        </tr>`).join('');
+    } catch (e) {
+      toast(authErrorText(e), true);
+    }
   }
 
   /* ---------- الإقلاع ---------- */
@@ -697,8 +839,88 @@
 
     await loadLocale(state.lang);
     bindEvents();
-    state.currentUser = { id: 1, username: 'admin', display_name: 'مدير المكتب', role: 'admin' };
+
+    let session = null;
+    try { session = await API.authCurrent(); } catch (e) {}
+    const sessUser = session && session.user ? session.user : null;
+    const needsSetup = !!(session && session.needsSetup === true);
+    state.currentUser = sessUser || { id: 0, username: '', display_name: '', role: 'guest' };
+    if (!sessUser || !sessUser.id) {
+      if (needsSetup) showSetup();
+      else showLogin();
+      return;
+    }
+    updateSecurityCard();
     bootApp();
+  }
+
+  /* ---------- شاشة الدخول ---------- */
+  function showLogin() {
+    const backdrop = document.getElementById('login-backdrop');
+    backdrop.classList.add('show');
+    document.getElementById('login-error').textContent = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-username').focus();
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('login-error');
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!username || !password) {
+        errEl.textContent = t('auth.fillAll');
+        return;
+      }
+      try {
+        const user = await API.authLogin(username, password);
+        state.currentUser = user;
+        backdrop.classList.remove('show');
+        updateSecurityCard();
+        bootApp();
+      } catch (err) {
+        errEl.textContent = authErrorText(err);
+      }
+    });
+  }
+
+  /* ---------- شاشة التسجيل الأول ---------- */
+  function showSetup() {
+    const backdrop = document.getElementById('login-backdrop');
+    backdrop.classList.add('show');
+    document.getElementById('login-form').style.display = 'none';
+    const setupForm = document.getElementById('setup-form');
+    setupForm.style.display = 'grid';
+    document.getElementById('setup-error').textContent = '';
+    document.getElementById('setup-password').value = '';
+    document.getElementById('setup-password2').value = '';
+    document.getElementById('setup-displayname').focus();
+    setupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById('setup-error');
+      const username = document.getElementById('setup-username').value.trim();
+      const displayName = document.getElementById('setup-displayname').value.trim();
+      const password = document.getElementById('setup-password').value;
+      const password2 = document.getElementById('setup-password2').value;
+      if (!username) {
+        errEl.textContent = t('users.usernameRequired');
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = t('settings.passwordTooShort');
+        return;
+      }
+      if (password !== password2) {
+        errEl.textContent = t('auth.passwordsDontMatch');
+        return;
+      }
+      try {
+        const user = await API.authSetupInitial(username, displayName, password);
+        state.currentUser = user;
+        backdrop.classList.remove('show');
+        location.reload();
+      } catch (err) {
+        errEl.textContent = authErrorText(err);
+      }
+    });
   }
 
   async function bootApp() {
@@ -710,6 +932,8 @@
     if (window.FinanceModule && window.FinanceModule.init) await window.FinanceModule.init();
     if (window.RegistersModule && window.RegistersModule.init) await window.RegistersModule.init();
     if (window.ArchiveModule && window.ArchiveModule.init) await window.ArchiveModule.init();
+    updateSecurityCard();
+    renderUsers();
     goTo('dashboard');
   }
 

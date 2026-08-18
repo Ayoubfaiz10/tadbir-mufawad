@@ -922,6 +922,56 @@ async function main() {
 
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
 
+  console.log('\n=== 20. إدارة المستخدمين ===');
+  const freshDir2 = path.join(os.tmpdir(), 'huissier-users-' + Date.now());
+  fs.mkdirSync(freshDir2, { recursive: true });
+  process.chdir(__dirname);
+  const { initDatabase: initDb2 } = require('../db/database');
+  await initDb2(freshDir2);
+  const auth2 = require('../services/auth');
+  assert(auth2.needsSetup() === true, 'قاعدة جديدة: تسجيل أول مطلوب');
+  auth2.setupInitial('admin', 'مدير المكتب', 'admin123');
+  const u1 = auth2.createUser('khalid', 'خالد العمري', 'agent', 'agent123');
+  assert(u1 && u1.role === 'agent' && u1.password_hash === undefined, 'إضافة مستخدم (وكيل) بدون كشف التجزئة');
+  throws(() => auth2.createUser('khalid', 'مكرر', 'agent', 'agent123'), 'رفض اسم مستخدم مكرر');
+  throws(() => auth2.createUser('x', 'y', 'boss', '123456'), 'رفض دور غير صالح');
+  throws(() => auth2.createUser('x', 'y', 'agent', '123'), 'رفض كلمة مرور قصيرة');
+  const u2 = auth2.createUser('chaima', 'شيماء', 'admin', 'chaima123');
+  assert(u2.role === 'admin', 'إضافة مدير ثانٍ');
+  auth2.logout();
+  auth2.login('khalid', 'agent123');
+  throws(() => auth2.createUser('a', 'b', 'agent', '123456'), 'agent ممنوع من إضافة مستخدمين');
+  auth2.login('admin', 'admin123');
+  auth2.setUserActive(u1.id, false);
+  assert(auth2.getCurrentUser().username === 'admin', 'تبديل الحساب يدخل بالجلسة الجديدة مباشرة');
+  auth2.logout();
+  throws(() => auth2.login('khalid', 'agent123'), 'المستخدم المعطّل لا يدخل');
+  auth2.login('admin', 'admin123');
+  auth2.setUserActive(u1.id, true);
+  auth2.resetPassword(u1.id, 'newpass123');
+  auth2.logout();
+  auth2.login('khalid', 'newpass123');
+  assert(auth2.isAuthorized('procedure.delete') === false, 'الوكيل غير مخول للحذف');
+  assert(auth2.isAuthorized('archive.seal') === false, 'الوكيل غير مخول للختم');
+  auth2.login('admin', 'admin123');
+  throws(() => auth2.deleteUser(auth2.getCurrentUser().id), 'لا حذف لحسابك');
+  auth2.setUserActive(u2.id, false);
+  assert(auth2.getCurrentUser().role === 'admin', 'تعطيل مدير ثانٍ مسموح');
+  throws(() => auth2.setUserActive(u2.id, false), 'لا تعطيل آخر مدير نشط');
+  auth2.setUserActive(u2.id, true);
+  auth2.deleteUser(u1.id);
+  assert(auth2.listUsers().every((u) => u.username !== 'khalid'), 'حذف مستخدم');
+  auth2.logout();
+  throws(() => auth2.requireAuth('users.manage'), 'ممنوع إدارة المستخدمين بلا جلسة');
+  const auditLogs = require('../db/database').helpers.all(
+    "SELECT action FROM audit_logs WHERE action LIKE 'auth.%' ORDER BY id DESC LIMIT 30"
+  );
+  assert(auditLogs.some((a) => a.action === 'auth.user_created'), 'تدقيق: إنشاء مستخدم');
+  assert(auditLogs.some((a) => a.action === 'auth.user_deactivated'), 'تدقيق: تعطيل مستخدم');
+  assert(auditLogs.some((a) => a.action === 'auth.password_reset'), 'تدقيق: إعادة ضبط كلمة المرور');
+  assert(auditLogs.some((a) => a.action === 'auth.login_failed'), 'تدقيق: محاولة دخول فاشلة');
+  fs.rmSync(freshDir2, { recursive: true, force: true });
+
   console.log('\n====================');
   console.log(`النتيجة: ${passed} نجح، ${failed} فشل`);
   console.log('====================');
