@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { get, all, run, tx } = require('../db/database').helpers;
+const { get, all, run, tx, persist } = require('../db/database').helpers;
 const audit = require('./audit');
 const { getCurrentUser } = require('./auth');
 
@@ -99,7 +99,7 @@ function upgradeLegacyLayout() {
   try {
     const flag = get("SELECT value FROM meta WHERE key = 'archive_layout_v6'");
     if (flag) return;
-    const docs = all("SELECT id, entity_type, entity_id, file_path FROM documents WHERE status = 'active'");
+    const docs = all("SELECT id, entity_type, entity_id, file_path FROM documents WHERE status = 'active' AND file_path != ''");
     tx(() => {
       docs.forEach((d) => {
         const abs = path.resolve(d.file_path || '');
@@ -139,6 +139,7 @@ function saveDocumentAndLink({ procedureId, kind, title, filePath, templateId = 
   if (procedureId) {
     run('INSERT OR IGNORE INTO procedure_documents (procedure_id, document_id) VALUES (?,?)', [procedureId, res.lastId]);
   }
+  persist();
   audit.log({
     action: 'document.created',
     entity: 'procedure',
@@ -170,9 +171,10 @@ function archiveForProcedure(procedureId) {
 }
 
 function listArchive(f = {}) {
-  let sql = `SELECT doc.*, p.procedure_number FROM documents doc
+  let sql = `SELECT doc.*, COALESCE(p.procedure_number, p2.procedure_number) AS procedure_number FROM documents doc
      LEFT JOIN procedure_documents pd ON pd.document_id = doc.id
-     LEFT JOIN procedures p ON p.id = COALESCE(pd.procedure_id, 0)
+     LEFT JOIN procedures p ON p.id = pd.procedure_id
+     LEFT JOIN procedures p2 ON p2.id = doc.entity_id AND doc.entity_type = 'procedure'
      WHERE 1=1`;
   const params = [];
   if (f.kind) { sql += ' AND doc.kind = ?'; params.push(String(f.kind)); }
@@ -201,10 +203,45 @@ function unlink(id) {
   const doc = getById(id);
   if (doc && doc.status === 'sealed') throw new Error('DOC:SEALED:NO_DELETE');
   run('DELETE FROM documents WHERE id = ?', [id]);
+  persist();
+}
+
+/* ---------- مرجعيات الأرشيف (ملفات / إجراءات) ---------- */
+function createDossierRef(dossierId) {
+  const user = getCurrentUser();
+  const d = get('SELECT * FROM dossiers WHERE id = ?', [dossierId]);
+  if (!d) return null;
+  const existing = get("SELECT id FROM documents WHERE entity_type = 'dossier' AND entity_id = ? AND kind = 'dossier'", [dossierId]);
+  if (existing) return getById(existing.id);
+  const res = run(
+    `INSERT INTO documents (entity_type, entity_id, kind, title, file_name, file_path, mime, archived, created_by, status, sha256, size_bytes, period_key, source)
+     VALUES ('dossier', ?, 'dossier', ?, ?, '', '', 1, ?, 'active', '', 0, '', 'auto')`,
+    [dossierId, d.numero || 'ملف #' + dossierId, 'dossier-' + dossierId, user.username]
+  );
+  persist();
+  audit.log({ action: 'document.created', entity: 'dossier', entityId: dossierId, metadata: { document_id: res.lastId, kind: 'dossier' }, user });
+  return getById(res.lastId);
+}
+
+function createProcedureRef(procedureId) {
+  const user = getCurrentUser();
+  const p = get('SELECT * FROM procedures WHERE id = ?', [procedureId]);
+  if (!p) return null;
+  const existing = get("SELECT id FROM documents WHERE entity_type = 'procedure' AND entity_id = ? AND kind = 'procedure'", [procedureId]);
+  if (existing) return getById(existing.id);
+  const res = run(
+    `INSERT INTO documents (entity_type, entity_id, kind, title, file_name, file_path, mime, archived, created_by, status, sha256, size_bytes, period_key, source)
+     VALUES ('procedure', ?, 'procedure', ?, ?, '', '', 1, ?, 'active', '', 0, '', 'auto')`,
+    [procedureId, p.procedure_number || 'إجراء #' + procedureId, 'procedure-' + procedureId, user.username]
+  );
+  persist();
+  audit.log({ action: 'document.created', entity: 'procedure', entityId: procedureId, metadata: { document_id: res.lastId, kind: 'procedure' }, user });
+  return getById(res.lastId);
 }
 
 module.exports = {
   setArchiveDir, getArchiveDir, getById,
   saveDocumentAndLink, listForProcedure, archiveForProcedure, listArchive, unlink, safeFileName,
-  sha256File, fileSize, archivePathFor, stats, upgradeLegacyLayout, isInsideArchive
+  sha256File, fileSize, archivePathFor, stats, upgradeLegacyLayout, isInsideArchive,
+  createDossierRef, createProcedureRef
 };

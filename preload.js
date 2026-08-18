@@ -127,6 +127,8 @@ contextBridge.exposeInMainWorld('appAPI', {
   archiveOpenDir: expose('archive:openDir'),
   archiveBackup: expose('archive:backup'),
   archiveRestore: expose('archive:restore'),
+  archiveDossier: expose('archive:dossier'),
+  archiveProcedure: expose('archive:procedure'),
 
   // التدقيق
   auditProcedure: expose('audit:procedure'),

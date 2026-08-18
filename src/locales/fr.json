@@ -14,7 +14,7 @@
     "settings": "Paramètres"
   },
   "archive": {
-    "subtitle": "Archives numériques du cabinet : PV, reçus, documents et archives de registres avec empreintes de sécurité",
+    "subtitle": "Archives numériques du cabinet : PV, reçus, documents, dossiers judiciaires, procédures et archives de registres avec empreintes de sécurité",
     "openDir": "Ouvrir le dossier d'archives",
     "search": "Rechercher dans les archives (titre, nom de fichier...)",
     "empty": "Aucun document dans les archives pour le moment.",
@@ -25,6 +25,8 @@
     "kindReceipt": "Reçus",
     "kindDocument": "Documents",
     "kindRegisterArchive": "Archives de registres",
+    "kindDossier": "Dossiers judiciaires",
+    "kindProcedure": "Procédures judiciaires",
     "kindOther": "Autres",
     "statusAll": "Tous les statuts",
     "statusActive": "Actif",

@@ -28,6 +28,7 @@ const templateService = require('./services/templateService');
 const settingsService = require('./services/settingsService');
 const pvService = require('./services/pvService');
 const pvPdfService = require('./services/pvPdfService');
+const archiveService = require('./services/archiveService');
 const registersService = require('./services/registersService');
 const backupService = require('./services/backupService');
 const LOCALES_DIR = path.join(__dirname, 'src', 'locales');
@@ -91,17 +92,24 @@ function register() {
   });
 
   /* ---------- الملفات ---------- */
-  genHandle('app:saveDossier', (d) => dossierService.save({
-    id: int(d.id) || null,
-    numero: str(d.numero),
-    demandeur: str(d.demandeur),
-    defendeur: str(d.defendeur),
-    court: str(d.court),
-    type: str(d.type),
-    status: str(d.status),
-    date: str(d.date),
-    notes: str(d.notes)
-  }));
+  genHandle('app:saveDossier', (d) => {
+    const result = dossierService.save({
+      id: int(d.id) || null,
+      numero: str(d.numero),
+      demandeur: str(d.demandeur),
+      defendeur: str(d.defendeur),
+      court: str(d.court),
+      type: str(d.type),
+      status: str(d.status),
+      date: str(d.date),
+      notes: str(d.notes)
+    });
+    const st = str(d.status);
+    if (st === 'closed' || st === 'archived') {
+      archiveService.createDossierRef(result.id);
+    }
+    return result;
+  });
   genHandle('app:deleteDossier', (id) => dossierService.remove(int(id)));
   genHandle('app:dossierSearch', (q) => dossierService.searchDossiers(str(q), 25));
   genHandle('app:dossierParties', (dossierId) => dossierService.listPartiesByDossier(int(dossierId)));
@@ -271,7 +279,13 @@ function register() {
     notes: str(input.notes)
   }));
   genHandle('proc:delete', (id) => procedureService.deleteProcedure(int(id)));
-  genHandle('proc:statusChange', (id, to, note) => procedureService.applyStatus(int(id), str(to), str(note, 1000)));
+  genHandle('proc:statusChange', (id, to, note) => {
+    const result = procedureService.applyStatus(int(id), str(to), str(note, 1000));
+    if (to === 'COMPLETED' || to === 'CANCELLED') {
+      archiveService.createProcedureRef(int(id));
+    }
+    return result;
+  });
   genHandle('proc:nextStatus', (id) => procedureService.allowedTransitions(int(id)));
 
   /* ---------- الأداءات ---------- */
@@ -416,6 +430,8 @@ function register() {
     if (openRes) throw new Error('ARCHIVE:OPEN_FAILED');
     return { ok: true };
   });
+  genHandle('archive:dossier', (dossierId) => archiveService.createDossierRef(int(dossierId)));
+  genHandle('archive:procedure', (procedureId) => archiveService.createProcedureRef(int(procedureId)));
 
   /* ---------- النسخ الاحتياطي والاستعادة (P4) ---------- */
   genHandle('archive:backup', async () => {

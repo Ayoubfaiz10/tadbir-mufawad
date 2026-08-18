@@ -44,11 +44,17 @@
 
   const KIND_LABELS = {
     pv: ['محضر', 'PV'], receipt: ['وصل', 'Reçu'], document: ['مستند', 'Document'],
-    'register-archive': ['أرشيف سجل', 'Archive registre'], other: ['أخرى', 'Autre']
+    'register-archive': ['أرشيف سجل', 'Archive registre'],
+    dossier: ['ملف قضائي', 'Dossier'], procedure: ['إجراء قضائي', 'Procédure'],
+    other: ['أخرى', 'Autre']
   };
-  const KIND_COLORS = { pv: 'info', receipt: 'success', document: 'primary', 'register-archive': 'warning', other: 'gray' };
+  const KIND_COLORS = { pv: 'info', receipt: 'success', document: 'primary', 'register-archive': 'warning', dossier: 'danger', procedure: 'primary', other: 'gray' };
   const STATUS_LABELS = { active: ['نشط', 'Actif'], archived: ['مؤرشف', 'Archivé'], sealed: ['مختوم', 'Scellé'] };
   const STATUS_COLORS = { active: 'success', archived: 'info', sealed: 'danger' };
+
+  function isReference(d) {
+    return d.kind === 'dossier' || d.kind === 'procedure';
+  }
 
   /* ---------- أدوات ---------- */
   function kindBadge(kind) {
@@ -77,14 +83,14 @@
   /* ---------- البطاقات ---------- */
   function renderCards(s) {
     const cards = [
-      { icon: 'fa-file', accent: 'info', v: s.total, k: l('الوثائق', 'Documents') },
+      { icon: 'fa-file', accent: 'info', v: s.total, k: l('العناصر', 'Éléments') },
       { icon: 'fa-database', accent: 'primary', v: fmtBytes(s.bytes), k: l('الحجم الإجمالي', 'Taille totale') },
       { icon: 'fa-lock', accent: 'danger', v: s.sealed, k: l('مختومة', 'Scellées') }
     ];
-    const top = (s.byKind || []).slice(0, 3);
+    const top = (s.byKind || []).slice(0, 5);
     top.forEach((k) => {
       const pair = KIND_LABELS[k.kind];
-      if (pair) cards.push({ icon: 'fa-box', accent: 'warning', v: k.c, k: l(pair[0], pair[1]) });
+      if (pair) cards.push({ icon: k.kind === 'dossier' ? 'fa-folder' : k.kind === 'procedure' ? 'fa-scale-balanced' : 'fa-box', accent: KIND_COLORS[k.kind] || 'warning', v: k.c, k: l(pair[0], pair[1]) });
     });
     byId('arch-cards').innerHTML = cards.map((c) => `
       <div class="stat-card" data-accent="${c.accent}">
@@ -101,26 +107,30 @@
     ].map((h) => `<th>${h}</th>`).join('')}</tr>`;
 
     byId('arch-empty').classList.toggle('hidden', rows.length > 0);
-    byId('arch-tbody').innerHTML = rows.map((d) => `
-      <tr>
+    byId('arch-tbody').innerHTML = rows.map((d) => {
+      const ref = isReference(d);
+      return `<tr>
         <td>${kindBadge(d.kind)}</td>
         <td><strong>${esc(d.title)}</strong></td>
         <td>${refOf(d)}</td>
         <td nowrap>${esc(fmtDate(d.created_at))}</td>
-        <td nowrap>${esc(fmtBytes(d.size_bytes))}</td>
+        <td nowrap>${ref ? '—' : esc(fmtBytes(d.size_bytes))}</td>
         <td>${statusBadge(d.status)}</td>
         <td>${esc(d.created_by || '—')}</td>
-        <td><span class="muted-cell" title="${esc(d.sha256 || '')}">${esc(String(d.sha256 || '').slice(0, 10) + '…')}</span></td>
+        <td>${ref ? '—' : `<span class="muted-cell" title="${esc(d.sha256 || '')}">${esc(String(d.sha256 || '').slice(0, 10) + '…')}</span>`}</td>
         <td><div class="row-actions">
-          <button class="row-btn" data-arch-open="${d.id}" title="${l('فتح', 'Ouvrir')}"><i class="fas fa-eye"></i></button>
-          <button class="row-btn" data-arch-dl="${d.id}" title="${l('تحميل', 'Télécharger')}"><i class="fas fa-download"></i></button>
+          ${ref
+            ? `<button class="row-btn" data-arch-nav="${d.entity_type}:${d.entity_id}" title="${l('فتح', 'Ouvrir')}"><i class="fas fa-arrow-up-right-from-square"></i></button>`
+            : `<button class="row-btn" data-arch-open="${d.id}" title="${l('فتح', 'Ouvrir')}"><i class="fas fa-eye"></i></button>
+               <button class="row-btn" data-arch-dl="${d.id}" title="${l('تحميل', 'Télécharger')}"><i class="fas fa-download"></i></button>`}
           ${d.status !== 'sealed' && isAdmin ? `<button class="row-btn del" data-arch-del="${d.id}" title="${l('حذف', 'Supprimer')}"><i class="fas fa-trash"></i></button>` : ''}
         </div></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     const more = rows.length >= limit;
     byId('arch-footer').innerHTML = `
-      <span class="page-ind">${rows.length} ${l('وثيقة', 'documents')}</span>
+      <span class="page-ind">${rows.length} ${l('عنصر', 'éléments')}</span>
       ${more ? `<button class="btn btn-ghost btn-sm" id="arch-more"><i class="fas fa-angles-down"></i> ${l('تحميل المزيد', 'Charger plus')}</button>` : ''}`;
     const moreBtn = byId('arch-more');
     if (moreBtn) moreBtn.addEventListener('click', loadMore);
@@ -183,10 +193,15 @@
     });
 
     byId('arch-tbody').addEventListener('click', async (e) => {
+      const navBtn = e.target.closest('[data-arch-nav]');
       const openBtn = e.target.closest('[data-arch-open]');
       const dlBtn = e.target.closest('[data-arch-dl]');
       const delBtn = e.target.closest('[data-arch-del]');
-      if (openBtn) {
+      if (navBtn) {
+        const [type, id] = navBtn.getAttribute('data-arch-nav').split(':');
+        if (type === 'procedure') { goTo('procedures'); setTimeout(() => { if (window.ProceduresModule && window.ProceduresModule.openDetail) window.ProceduresModule.openDetail(Number(id)); }, 100); }
+        else if (type === 'dossier') { goTo('dossiers'); }
+      } else if (openBtn) {
         try { await API.docOpen(Number(openBtn.getAttribute('data-arch-open'))); } catch (err) { toast(errTxt(err), true); }
       } else if (dlBtn) {
         try {
