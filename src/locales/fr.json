@@ -1,0 +1,787 @@
+{
+  "appName": "Gestion Huissier",
+  "appSubtitle": "Gestion du cabinet judiciaire",
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "procedures": "Procédures",
+    "pvs": "Procès-verbaux",
+    "dossiers": "Dossiers",
+    "clients": "Clients",
+    "documents": "Modèles",
+    "finance": "Paiements et frais",
+    "registers": "Registres professionnels",
+    "archive": "Archives",
+    "settings": "Paramètres"
+  },
+  "archive": {
+    "subtitle": "Archives numériques du cabinet : PV, reçus, documents et archives de registres avec empreintes de sécurité",
+    "openDir": "Ouvrir le dossier d'archives",
+    "search": "Rechercher dans les archives (titre, nom de fichier...)",
+    "empty": "Aucun document dans les archives pour le moment.",
+    "backup": "Sauvegarde (ZIP)",
+    "restore": "Restaurer une sauvegarde",
+    "kindAll": "Tous les types",
+    "kindPv": "PV",
+    "kindReceipt": "Reçus",
+    "kindDocument": "Documents",
+    "kindRegisterArchive": "Archives de registres",
+    "kindOther": "Autres",
+    "statusAll": "Tous les statuts",
+    "statusActive": "Actif",
+    "statusArchived": "Archivé",
+    "statusSealed": "Scellé",
+    "stats": {
+      "documents": "Documents",
+      "totalSize": "Taille totale",
+      "sealed": "Scellées"
+    }
+  },
+  "registers": {
+    "subtitle": "Registre journal des procédures et registre journal des opérations comptables (art. 37, loi 46.21)",
+    "stats": {
+      "todayProcedures": "Procédures du jour",
+      "todayEntries": "Écritures du jour",
+      "todayPvs": "PV du jour",
+      "income": "Encaissé du jour",
+      "refunds": "Remboursé du jour",
+      "net": "Net",
+      "incomplete": "Procédures non exécutées",
+      "latestAudit": "Dernières opérations"
+    },
+    "tabs": {
+      "daily": "Registre journal",
+      "accounting": "Registre comptable",
+      "corrections": "Corrections",
+      "periods": "Périodes",
+      "audit": "Audit",
+      "search": "Recherche globale",
+      "settings": "Paramètres"
+    },
+    "status": {
+      "ACTIVE": "Actif",
+      "SUPERSEDED": "Remplacé",
+      "CANCELLED": "Annulé",
+      "OPEN": "Ouverte",
+      "REVIEW": "En révision",
+      "LOCKED": "Vérouillée"
+    },
+    "flow": { "income": "Encaissement", "refund": "Remboursement" },
+    "correction": {
+      "requested": "Demande de correction",
+      "approved": "Approuvée",
+      "rejected": "Rejetée",
+      "executed": "Exécutée",
+      "request": "Demander une correction",
+      "reason": "Motif de la correction",
+      "approve": "Approuver la demande",
+      "reject": "Rejeter la demande",
+      "replacement": "Écriture de remplacement"
+    },
+    "actions": {
+      "view": "Détails",
+      "cancel": "Annuler l'écriture",
+      "archive": "Archiver la période"
+    },
+    "entryProps": {
+      "serial": "N° séquentiel",
+      "date": "Date",
+      "procedure": "Procédure",
+      "dossier": "Dossier",
+      "type": "Type",
+      "parties": "Parties",
+      "pv": "PV",
+      "amount": "Montant",
+      "currency": "Devise",
+      "receipt": "Quittance",
+      "user": "Utilisateur",
+      "status": "Statut",
+      "reason": "Motif",
+      "reference": "Référence",
+      "values": "Données"
+    },
+    "settings": {
+      "save": "Enregistrer les paramètres",
+      "saved": "Paramètres des registres enregistrés",
+      "patternPlaceholder": "Modèle de numérotation (ex: {year}-{seq:000000})",
+      "frequency": "Cycle de numérotation",
+      "autoDaily": "Enregistrement automatique au registre journal lors de la création d'une procédure",
+      "autoAccounting": "Enregistrement automatique au registre comptable lors de la confirmation d'un paiement",
+      "officialRef": "Référence du texte réglementaire"
+    },
+    "manual": {
+      "titleDaily": "Saisie manuelle au registre journal",
+      "titleAccounting": "Saisie manuelle au registre comptable",
+      "searchProc": "Rechercher une procédure...",
+      "searchPay": "Rechercher un paiement...",
+      "flowType": "Type d'opération"
+    },
+    "from": "Du",
+    "to": "Au",
+    "statusFilter": "Statut",
+    "allStatuses": "Tous les statuts",
+    "statusActive": "Actif",
+    "statusSuperseded": "Remplacé",
+    "statusCancelled": "Annulé",
+    "user": "Utilisateur",
+    "dossierNo": "N° dossier",
+    "apply": "Appliquer",
+    "manualEntry": "Saisie manuelle",
+    "print": "Imprimer",
+    "archivePeriod": "Archiver la période",
+    "emptyEntries": "Aucune écriture dans cette période.",
+    "dailySearch": "Recherche (n°, dossier, partie, CIN...)",
+    "accountingSearch": "Recherche (n°, dossier, reçu...)",
+    "emptyCorrections": "Aucune demande de correction.",
+    "emptyPeriods": "Aucune période enregistrée.",
+    "emptyAudit": "Aucune opération d'audit.",
+    "searchAll": "Rechercher dans tous les registres (n° séquentiel, n° procédure, dossier, CIN, reçu...)",
+    "searchHint": "Tapez pour rechercher dans les registres.",
+    "legalRef": "Référence légale — Article 37 de la loi n° 46.21",
+    "legalRefHint": "Les registres sont numérotés en continu, sans blanc, rature ni espace ; le président du tribunal signe la première et la dernière page de la version papier. Le modèle de chaque registre est fixé par un texte réglementaire (décret 2.25.885/BO 7506) non encore publié — ces modèles sont provisoires et configurables, et toute impression porte une mention le précisant."
+  },
+  "pvs": {
+    "title": "Procès-verbaux",
+    "subtitle": "Gestion des procès-verbaux et de leurs copies",
+    "search": "Rechercher (N° PV, procédure, dossier, noms)...",
+    "add": "Nouveau PV",
+    "filter": "Filtrer",
+    "filterAll": "Tous les statuts",
+    "filterStatus": "Statut",
+    "empty": "Aucun procès-verbal.",
+    "emptyHint": "Créez un PV à partir d'une procédure.",
+    "loadMore": "Charger plus",
+    "stats": {
+      "total": "Total PV",
+      "drafts": "Brouillons",
+      "finalized": "Finalisés",
+      "archived": "Archivés",
+      "cancelled": "Annulés"
+    },
+    "create": {
+      "title": "Nouveau PV",
+      "searchProc": "Rechercher une procédure (n°, dossier, nom...)",
+      "ok": "Créer",
+      "needProc": "Choisissez d'abord une procédure",
+      "needTemplate": "Aucun modèle pour cette procédure"
+    },
+    "editor": {
+      "preview": "Aperçu",
+      "save": "Enregistrer"
+    }
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "subtitle": "Vue d'ensemble de l'activité du cabinet",
+    "statDossiers": "Dossiers",
+    "statClients": "Clients",
+    "statActive": "Dossiers actifs",
+    "statClosed": "Dossiers clôturés",
+    "recentTitle": "Activités récentes",
+    "emptyActivity": "Aucune activité — commencez par ajouter un dossier",
+    "quickTitle": "Actions rapides",
+    "quickDossier": "Nouveau dossier",
+    "quickClient": "Nouveau client",
+    "quickDoc": "Générer un document",
+    "recentDossiers": "Derniers dossiers",
+    "statPaymentsTotal": "Total paiements",
+    "statPaymentsAmount": "Montant encaissé"
+  },
+  "dossiers": {
+    "title": "Dossiers judiciaires",
+    "subtitle": "Enregistrement et suivi des dossiers",
+    "search": "Rechercher dans les dossiers...",
+    "add": "Nouveau dossier",
+    "export": "Exporter CSV",
+    "columns": [
+      "N°",
+      "Demandeur",
+      "Défendeur",
+      "Tribunal",
+      "Type",
+      "Statut",
+      "Date",
+      "Actions"
+    ],
+    "empty": "Aucun dossier. Cliquez sur « Nouveau dossier » pour commencer.",
+    "deleteConfirm": "Confirmez-vous la suppression de ce dossier ?",
+    "noSelection": "Sélectionnez un dossier dans le tableau",
+    "formTitle": "Nouveau dossier",
+    "editTitle": "Modifier le dossier",
+    "fields": {
+      "numero": "N° de dossier",
+      "demandeur": "Demandeur",
+      "defendeur": "Défendeur",
+      "court": "Tribunal",
+      "type": "Type d'affaire",
+      "status": "Statut",
+      "date": "Date d'ouverture",
+      "notes": "Notes"
+    },
+    "types": [
+      "Civil",
+      "Commercial",
+      "Famille",
+      "Social",
+      "Administratif",
+      "Exécution",
+      "Signification",
+      "Constat"
+    ],
+    "activityAdd": "Ajout du dossier n° ",
+    "activityEdit": "Modification du dossier n° ",
+    "statuses": [
+      "Ouvert",
+      "En cours",
+      "Clôturé",
+      "En attente"
+    ]
+  },
+  "clients": {
+    "title": "Clients",
+    "subtitle": "Base de données clients, avocats et organismes",
+    "search": "Rechercher un client...",
+    "add": "Nouveau client",
+    "export": "Exporter CSV",
+    "columns": [
+      "Nom",
+      "Téléphone",
+      "Email",
+      "Type",
+      "Actions"
+    ],
+    "empty": "Aucun client. Cliquez sur « Nouveau client » pour commencer.",
+    "deleteConfirm": "Confirmez-vous la suppression de ce client ?",
+    "formTitle": "Nouveau client",
+    "editTitle": "Modifier le client",
+    "fields": {
+      "name": "Nom complet",
+      "phone": "Téléphone",
+      "email": "Email",
+      "type": "Type",
+      "notes": "Notes"
+    },
+    "types": [
+      "Particulier",
+      "Avocat",
+      "Société",
+      "Cabinet",
+      "Administration",
+      "Autre"
+    ]
+  },
+  "documents": {
+    "title": "Bibliothèque de modèles",
+    "subtitle": "La bibliothèque couvre significations, exécutions, constats, gestion des versions et génération de PDF liée aux actes",
+    "placeholder": "Le module de génération de documents sera ajouté après l'étude du métier.",
+    "comingSoon": "Bientôt",
+    "templates": {
+      "search": "Rechercher dans les modèles...",
+      "archivedBtn": "Archivés",
+      "filter": "Filtrer",
+      "add": "Nouveau modèle",
+      "empty": "Aucun modèle pour le moment.",
+      "loadMore": "Charger plus"
+    },
+    "editor": {
+      "title": "Éditeur de modèle",
+      "name": "Nom",
+      "desc": "Description",
+      "lang": "Langue",
+      "cat": "Catégorie",
+      "type": "Type d'acte",
+      "active": "Modèle actif",
+      "version": "Version",
+      "major": "Version majeure",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "preview": "Aperçu",
+      "languageAr": "Arabe",
+      "languageFr": "Français",
+      "description": "Description",
+      "activeLabel": "Modèle actif"
+    },
+    "preview": {
+      "title": "Aperçu du modèle",
+      "pick": "Choisir un acte pour les vraies valeurs (optionnel)",
+      "gen": "Générer PDF",
+      "saveFirst": "Enregistrez d'abord le modèle",
+      "search": "Choisir une procédure pour prévisualiser les vraies valeurs (optionnel)",
+      "generate": "Générer PDF"
+    },
+    "view": {
+      "title": "Détails du modèle",
+      "versions": "Versions",
+      "gen": "Générer PDF",
+      "edit": "Modifier",
+      "dup": "Dupliquer",
+      "activate": "Activer",
+      "deactivate": "Désactiver",
+      "archive": "Archiver",
+      "preview": "Aperçu"
+    },
+    "actions": {
+      "pdf": "Générer PDF",
+      "view": "Détails",
+      "edit": "Modifier",
+      "dup": "Dupliquer",
+      "archive": "Archiver",
+      "active": "Activer",
+      "inactive": "Désactiver"
+    },
+    "stats": {
+      "total": "Modèles",
+      "active": "Actifs",
+      "inactive": "Inactifs",
+      "archived": "Archivés"
+    }
+  },
+  "procedures": {
+    "title": "Procédures",
+    "subtitle": "Gestion et suivi de toutes les procédures judiciaires et directes",
+    "add": "Nouvelle procédure",
+    "search": "Recherche rapide (numéro, dossier, nom, CIN, type)...",
+    "filter": "Filtrer",
+    "clearFilters": "Effacer les filtres",
+    "columns": [
+      "N° procédure",
+      "Dossier",
+      "Type",
+      "Catégorie",
+      "Demandeur",
+      "Parties",
+      "Date",
+      "Statut",
+      "Montant",
+      "Maj",
+      "Actions"
+    ],
+    "empty": "Aucune procédure trouvée.",
+    "emptyHint": "Commencez par créer une nouvelle procédure.",
+    "loading": "Chargement...",
+    "loadMore": "Charger plus",
+    "showing": "Affichage de",
+    "of": "sur",
+    "items": "éléments",
+    "stats": {
+      "all": "Toutes les procédures",
+      "today": "Aujourd'hui",
+      "inProgress": "En cours",
+      "completed": "Terminées",
+      "postponed": "Reportées"
+    },
+    "filters": {
+      "title": "Filtres",
+      "category": "Catégorie",
+      "allCategories": "Toutes",
+      "judicial": "Procédures judiciaires",
+      "direct": "Procédures directes",
+      "type": "Type",
+      "allTypes": "Tous les types",
+      "status": "Statut",
+      "allStatuses": "Tous les statuts",
+      "dateRange": "Date",
+      "today": "Aujourd'hui",
+      "week": "Cette semaine",
+      "month": "Ce mois",
+      "custom": "Période personnalisée",
+      "from": "Du",
+      "to": "Au",
+      "user": "Utilisateur responsable",
+      "allUsers": "Tous les utilisateurs",
+      "apply": "Appliquer"
+    },
+    "statusLabels": {
+      "NEW": "Nouveau",
+      "IN_PROGRESS": "En cours",
+      "COMPLETED": "Terminé",
+      "POSTPONED": "Reporté",
+      "CANCELLED": "Annulé"
+    },
+    "categories": {
+      "JUDICIAL": "Procédures judiciaires",
+      "DIRECT": "Procédures directes"
+    },
+    "actions": {
+      "view": "Voir",
+      "edit": "Modifier",
+      "pv": "Créer un PV",
+      "payment": "Enregistrer un paiement",
+      "archive": "Ouvrir les archives",
+      "delete": "Supprimer",
+      "status": "Changer le statut"
+    },
+    "deleteConfirm": "Confirmez-vous la suppression de cette procédure ? Toutes ses liaisons seront supprimées.",
+    "errors": {
+      "load": "Impossible de charger les procédures",
+      "create": "Impossible de créer la procédure",
+      "update": "Impossible de mettre à jour la procédure",
+      "invalid": "Données invalides",
+      "permission": "Opération non autorisée"
+    }
+  },
+  "wizard": {
+    "title": "Nouvelle procédure",
+    "steps": [
+      "Type",
+      "Dossier",
+      "Parties",
+      "Informations",
+      "Vérification"
+    ],
+    "next": "Suivant",
+    "back": "Précédent",
+    "create": "Créer la procédure",
+    "cancel": "Annuler",
+    "step1": {
+      "title": "Choisissez la catégorie et le type",
+      "judicial": "Procédures judiciaires",
+      "judicialDesc": "Notification, exécution des jugements, exécution des ordonnances, faire, notification et exécution",
+      "direct": "Procédures directes",
+      "directDesc": "Notifications, constatations, offre réelle",
+      "chooseType": "Choisissez le type de procédure"
+    },
+    "step2": {
+      "title": "Choisir le dossier",
+      "searchPlaceholder": "Recherche par n° dossier, nom, partie ou CIN...",
+      "results": "Résultats",
+      "noResults": "Aucun dossier trouvé",
+      "newDossier": "Créer un nouveau dossier",
+      "selected": "Dossier sélectionné",
+      "change": "Changer"
+    },
+    "step3": {
+      "title": "Parties",
+      "requester": "Demandeur",
+      "target": "Partie concernée",
+      "name": "Nom",
+      "cin": "CIN",
+      "address": "Adresse",
+      "phone": "Téléphone",
+      "email": "Email",
+      "autoloaded": "Chargées automatiquement depuis le dossier",
+      "noParties": "Aucune partie liée au dossier"
+    },
+    "step4": {
+      "title": "Informations de la procédure",
+      "amount": "Montant (optionnel)",
+      "currency": "Devise",
+      "assignedTo": "Utilisateur responsable",
+      "notes": "Notes",
+      "requiredHint": "Les champs marqués * sont obligatoires"
+    },
+    "step5": {
+      "title": "Vérification",
+      "review": "Vérifiez les informations avant enregistrement",
+      "dossier": "Dossier",
+      "type": "Type",
+      "category": "Catégorie",
+      "requester": "Demandeur",
+      "parties": "Parties",
+      "fields": "Informations",
+      "amount": "Montant",
+      "notes": "Notes",
+      "assignedTo": "Responsable"
+    }
+  },
+  "procDetails": {
+    "title": "Détails de la procédure",
+    "back": "Retour à la liste",
+    "info": "Informations",
+    "timeline": "Chronologie",
+    "parties": "Parties",
+    "documents": "Documents et PV",
+    "payments": {
+      "amount": "Montant",
+      "method": "Méthode",
+      "date": "Date",
+      "status": "Statut",
+      "reference": "Référence",
+      "notes": "Notes",
+      "methods": [
+        "Espèces",
+        "Virement",
+        "Chèque",
+        "Autre"
+      ],
+      "statuses": [
+        "Dû",
+        "Reçu",
+        "Annulé"
+      ]
+    },
+    "archive": "Archives",
+    "audit": "Journal",
+    "btnEdit": "Modifier",
+    "btnStatus": "Changer le statut",
+    "btnPv": "Créer un PV",
+    "btnPayment": "Paiement",
+    "btnReceipt": "Reçu",
+    "btnArchive": "Ouvrir les archives",
+    "btnDelete": "Supprimer",
+    "statusHistory": "Historique des statuts",
+    "dfields": {
+      "number": "N° procédure",
+      "dossier": "Dossier",
+      "category": "Catégorie",
+      "type": "Type",
+      "status": "Statut",
+      "created": "Créé le",
+      "updated": "Mis à jour le",
+      "started": "Démarrée le",
+      "completed": "Terminée le",
+      "createdBy": "Créée par",
+      "assignedTo": "Responsable",
+      "amount": "Montant",
+      "requester": "Demandeur",
+      "notes": "Notes"
+    },
+    "emptyTimeline": "Aucune opération pour le moment.",
+    "emptyDocs": "Aucun document — créez un PV ou ajoutez des fichiers.",
+    "emptyPayments": "Aucun paiement enregistré.",
+    "docs": {
+      "pv": "PV",
+      "receipt": "Reçus",
+      "document": "Documents",
+      "other": "Autres",
+      "open": "Ouvrir",
+      "download": "Télécharger",
+      "print": "Imprimer",
+      "archive": "Archiver",
+      "delete": "Supprimer",
+      "generated": "Archivés automatiquement à la création"
+    },
+    "pv": {
+      "title": "Créer un PV",
+      "chooseTemplate": "Choisir le modèle de PV",
+      "notes": "Notes à inclure dans le PV",
+      "generate": "Générer",
+      "generating": "Génération...",
+      "done": "PV créé et archivé automatiquement",
+      "error": "Échec de la génération du PV"
+    },
+    "payment": {
+      "title": "Enregistrer un paiement",
+      "addPayment": "Ajouter un paiement",
+      "receipt": "Reçu",
+      "receiptDone": "Reçu créé et archivé",
+      "noReceipt": "Aucun reçu pour ce paiement",
+      "saved": "Paiement enregistré"
+    },
+    "statusDlg": {
+      "title": "Changer le statut",
+      "current": "Statut actuel",
+      "to": "Vers",
+      "note": "Note",
+      "save": "Appliquer"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Personnalisation de l'application et du cabinet",
+    "language": "Langue",
+    "languageHint": "Le changement de langue est aussi disponible dans la barre supérieure",
+    "office": "Informations du cabinet",
+    "officeName": "Nom du cabinet",
+    "officeAddress": "Adresse",
+    "officePhone": "Téléphone",
+    "officeAppNumber": "N° d'habilitation",
+    "save": "Enregistrer",
+    "saved": "Enregistré avec succès",
+    "theme": "Thème",
+    "light": "Clair",
+    "dark": "Sombre",
+    "about": "À propos",
+    "aboutText": "Version 0.1.0 — Structure de base. Les fonctions spécialisées seront ajoutées après l'étude du métier.",
+    "data": "Données et sauvegarde",
+    "dataHint": "Les données sont sauvegardées automatiquement (SQLite).",
+    "users": "Utilisateurs",
+    "userLogin": "Connexion",
+    "userLogged": "Connecté en tant que",
+    "security": "Sécurité",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe (6 caractères min.)",
+    "savePassword": "Changer le mot de passe",
+    "passwordChanged": "Mot de passe modifié avec succès",
+    "passwordTooShort": "Le mot de passe doit comporter au moins 6 caractères",
+    "loggedAs": "Connecté en tant que :",
+    "logout": "Se déconnecter",
+    "procedureConf": "Systèmes de procédures",
+    "procedureConfHint": "Gestion des statuts, transitions et types de procédures. Extensible sans toucher au code.",
+    "types": "Types de procédures",
+    "addType": "Ajouter un type",
+    "adminOnly": "Réservé à l'administrateur"
+  },
+  "finance": {
+    "title": "Paiements et frais",
+    "subtitle": "Gestion des paiements, tarifications et comptabilité",
+    "search": "Rechercher les paiements...",
+    "filterAll": "Tous les statuts",
+    "stats": {
+      "total": "Total paiements",
+      "pending": "En attente",
+      "confirmed": "Confirmés",
+      "paid": "Montant encaissé"
+    },
+    "payments": {
+      "title": "Paiements",
+      "empty": "Aucun paiement enregistré.",
+      "add": "Ajouter un paiement",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "detail": "Détails",
+      "statuses": {
+        "PENDING": "En attente",
+        "CONFIRMED": "Confirmé",
+        "PAID": "Payé",
+        "CANCELLED": "Annulé",
+        "REFUNDED": "Remboursé"
+      },
+      "col": {
+        "num": "N°",
+        "procedure": "Procédure",
+        "amount": "Montant",
+        "method": "Mode de paiement",
+        "status": "Statut",
+        "date": "Date",
+        "reference": "Référence",
+        "actions": "Actions"
+      },
+      "detail": {
+        "procedure": "Procédure",
+        "amount": "Montant",
+        "method": "Mode de paiement",
+        "status": "Statut",
+        "date": "Date de paiement",
+        "reference": "Référence",
+        "notes": "Notes",
+        "confirmedBy": "Confirmé par",
+        "confirmedAt": "Date de confirmation"
+      },
+      "messages": {
+        "confirmSuccess": "Paiement confirmé",
+        "cancelTitle": "Voulez-vous annuler ce paiement ?",
+        "cancelReason": "Annulation depuis la procédure",
+        "cancelSuccess": "Paiement annulé"
+      }
+    },
+    "assessments": {
+      "title": "Évaluations",
+      "empty": "Aucune évaluation.",
+      "confirm": "Confirmer",
+      "cancel": "Annuler",
+      "detail": "Détails",
+      "col": {
+        "num": "N°",
+        "procedure": "Procédure",
+        "type": "Type",
+        "total": "Montant total",
+        "status": "Statut",
+        "items": "Lignes",
+        "actions": "Actions"
+      },
+      "detail": {
+        "procedure": "Procédure",
+        "type": "Type d'évaluation",
+        "total": "Montant total",
+        "status": "Statut",
+        "notes": "Notes",
+        "items": "Lignes d'évaluation",
+        "itemDesc": "Description",
+        "itemQty": "Quantité",
+        "itemUnit": "Prix unitaire",
+        "itemTotal": "Total",
+        "confirmedBy": "Confirmé par",
+        "confirmedAt": "Date de confirmation"
+      }
+    },
+    "tariffs": {
+      "title": "Tarifications",
+      "add": "Nouvelle tarification",
+      "edit": "Modifier la tarification",
+      "empty": "Aucune tarification.",
+      "code": "Code",
+      "nameAr": "Nom arabe",
+      "nameFr": "Nom français",
+      "defaultAmount": "Montant par défaut",
+      "currency": "Devise"
+    },
+    "rules": {
+      "title": "Règles de liaison",
+      "add": "Nouvelle règle",
+      "empty": "Aucune règle.",
+      "overrideAmount": "Montant alternatif"
+    },
+    "ledger": {
+      "title": "Grand livre",
+      "summary": "Résumé financier",
+      "dashboard": "Tableau de bord financier",
+      "empty": "Aucun enregistrement.",
+      "col": {
+        "date": "Date",
+        "type": "Type",
+        "debit": "Débit",
+        "credit": "Crédit",
+        "description": "Description",
+        "ref": "Référence"
+      },
+      "dashboardLabels": {
+        "totalAssessments": "Total évaluations",
+        "totalCollected": "Total encaissé",
+        "totalRefunds": "Total remboursements",
+        "pendingAmount": "Montant en attente"
+      }
+    },
+    "errors": {
+      "load": "Erreur de chargement des données financières"
+    }
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "actions": "Actions",
+    "confirm": "Confirmer",
+    "all": "Tous",
+    "yes": "Oui",
+    "no": "Non",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "notFound": "Introuvable",
+    "menu": "Menu",
+    "theme": "Thème",
+    "clear": "Effacer",
+    "preview": "Aperçu"
+  },
+  "auth": {
+    "title": "Connexion",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "enter": "Se connecter",
+    "fillAll": "Saisissez le nom d'utilisateur et le mot de passe",
+    "wrongPassword": "Mot de passe incorrect",
+    "userNotFound": "Utilisateur introuvable",
+    "inactive": "Compte désactivé",
+    "notLoggedIn": "Non connecté",
+    "setupHint": "Créez le compte administrateur : le nom d'utilisateur et le mot de passe que vous utiliserez pour vous connecter",
+    "displayName": "Nom complet",
+    "confirmPassword": "Confirmer le mot de passe",
+    "createAccount": "Créer le compte",
+    "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+    "usernameRequired": "Le nom d'utilisateur est obligatoire",
+    "usernameTaken": "Ce nom d'utilisateur est déjà utilisé",
+    "alreadySetup": "Le premier compte a déjà été créé — connectez-vous",
+    "role": {
+      "admin": "Administrateur",
+      "agent": "Agent du cabinet",
+      "guest": "Invité"
+    }
+  },
+  "statusBadge": {
+    "open": "Ouvert",
+    "in_progress": "En cours",
+    "closed": "Clôturé",
+    "pending": "En attente"
+  }
+}

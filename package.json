@@ -1,0 +1,46 @@
+{
+  "name": "tadbir-mufawad",
+  "productName": "تسيير المفوض القضائي",
+  "version": "0.1.0",
+  "description": "تطبيق ديسكتوب لتسيير أعمال المفوضين القضائيين — Application de gestion pour huissiers de justice",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "author": "مكتب المفوض القضائي",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "ma.casablanca.huissier.gestion",
+    "productName": "مفوض",
+    "files": [
+      "main.js",
+      "preload.js",
+      "ipc.js",
+      "db/**/*",
+      "services/**/*",
+      "src/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  },
+  "dependencies": {
+    "sql.js": "^1.14.2"
+  }
+}

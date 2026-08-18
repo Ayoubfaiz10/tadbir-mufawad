@@ -1,0 +1,8 @@
+node_modules/
+dist/
+out/
+*.log
+test-run.txt
+tests-out.txt
+_testlog.txt
+.DS_Store

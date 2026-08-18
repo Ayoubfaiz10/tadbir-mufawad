@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self'; frame-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسيير المفوض القضائي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fas fa-scale-balanced"></i></div>
+        <div class="brand-text">
+          <strong data-i18n="appName">تسيير المفوض القضائي</strong>
+          <small data-i18n="appSubtitle">إدارة أعمال المكتب القضائي</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="dashboard"><i class="fas fa-gauge-high"></i><span data-i18n="nav.dashboard">لوحة التحكم</span></button>
+        <button class="nav-item" data-page="procedures"><i class="fas fa-list-check"></i><span data-i18n="nav.procedures">الإجراءات</span></button>
+        <button class="nav-item" data-page="pvs"><i class="fas fa-file-signature"></i><span data-i18n="nav.pvs">المحاضر</span></button>
+        <button class="nav-item" data-page="dossiers"><i class="fas fa-folder-open"></i><span data-i18n="nav.dossiers">الملفات القضائية</span></button>
+        <button class="nav-item" data-page="clients"><i class="fas fa-users"></i><span data-i18n="nav.clients">العملاء</span></button>
+        <button class="nav-item" data-page="documents"><i class="fas fa-file-contract"></i><span data-i18n="nav.documents">مكتبة النماذج</span></button>
+        <button class="nav-item" data-page="finance"><i class="fas fa-coins"></i><span data-i18n="nav.finance">الأداءات والحسابات</span></button>
+        <button class="nav-item" data-page="registers"><i class="fas fa-book-open"></i><span data-i18n="nav.registers">السجلات المهنية</span></button>
+        <button class="nav-item" data-page="archive"><i class="fas fa-box-archive"></i><span data-i18n="nav.archive">الأرشيف</span></button>
+        <button class="nav-item" data-page="settings"><i class="fas fa-gear"></i><span data-i18n="nav.settings">الإعدادات</span></button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-version">v0.1.0</div>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN ==================== -->
+    <main class="main-area">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <button class="icon-btn" id="sidebar-toggle" aria-label="القائمة" data-i18n-aria="common.menu"><i class="fas fa-bars"></i></button>
+        <div class="topbar-title">
+          <h1 id="page-title">لوحة التحكم</h1>
+          <p id="page-subtitle">نظرة عامة على نشاط المكتب</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="theme-toggle" aria-label="المظهر" data-i18n-aria="common.theme"><i class="fas fa-moon"></i></button>
+          <button class="lang-btn" id="lang-toggle">
+            <i class="fas fa-globe"></i>
+            <span id="lang-label">FR</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ============ PAGE: DASHBOARD ============ -->
+      <section class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card" data-accent="primary">
+            <div class="stat-icon"><i class="fas fa-folder-open"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-dossiers">0</span><span class="stat-label" data-i18n="dashboard.statDossiers">الملفات</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-clients">0</span><span class="stat-label" data-i18n="dashboard.statClients">العملاء</span></div>
+          </div>
+          <div class="stat-card" data-accent="info">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-active">0</span><span class="stat-label" data-i18n="dashboard.statActive">ملفات نشطة</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-circle-check"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-closed">0</span><span class="stat-label" data-i18n="dashboard.statClosed">ملفات منتهية</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-coins"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-payments-total">0</span><span class="stat-label" data-i18n="dashboard.statPaymentsTotal">إجمالي الأداءات</span></div>
+          </div>
+          <div class="stat-card" data-accent="info">
+            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-info"><span class="stat-value" id="stat-payments-amount">0</span><span class="stat-label" data-i18n="dashboard.statPaymentsAmount">المبلغ المحصّل</span></div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3 data-i18n="dashboard.quickTitle">إجراءات سريعة</h3>
+            </div>
+            <div class="quick-actions">
+              <button class="quick-btn" id="quick-dossier"><i class="fas fa-plus"></i><span data-i18n="dashboard.quickDossier">ملف جديد</span></button>
+              <button class="quick-btn" id="quick-client"><i class="fas fa-user-plus"></i><span data-i18n="dashboard.quickClient">عميل جديد</span></button>
+              <button class="quick-btn" id="quick-doc"><i class="fas fa-file-signature"></i><span data-i18n="dashboard.quickDoc">توليد وثيقة</span></button>
+            </div>
+
+            <div class="card-header" style="margin-top:22px">
+              <h3 data-i18n="dashboard.recentDossiers">أحدث الملفات</h3>
+            </div>
+            <div class="table-wrap" id="recent-table-wrap">
+              <table class="data-table">
+                <thead><tr id="recent-thead"></tr></thead>
+                <tbody id="recent-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="recent-empty">
+                <i class="fas fa-folder-open"></i><p data-i18n="dossiers.empty">لا توجد ملفات.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 data-i18n="dashboard.recentTitle">آخر الأنشطة</h3>
+            </div>
+            <ul class="activity-list" id="activity-list">
+              <li class="activity-empty" data-i18n="dashboard.emptyActivity">لا توجد أنشطة بعد.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: PROCEDURES ============ -->
+      <section class="page" id="page-procedures">
+        <div class="stats-grid proc-stats">
+          <div class="stat-card" data-accent="primary">
+            <div class="stat-icon"><i class="fas fa-list-check"></i></div>
+            <div class="stat-info"><span class="stat-value" id="procstat-total">0</span><span class="stat-label" data-i18n="procedures.stats.all">جميع الإجراءات</span></div>
+          </div>
+          <div class="stat-card" data-accent="info">
+            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+            <div class="stat-info"><span class="stat-value" id="procstat-today">0</span><span class="stat-label" data-i18n="procedures.stats.today">اليوم</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+            <div class="stat-info"><span class="stat-value" id="procstat-progress">0</span><span class="stat-label" data-i18n="procedures.stats.inProgress">قيد الإنجاز</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-circle-check"></i></div>
+            <div class="stat-info"><span class="stat-value" id="procstat-complete">0</span><span class="stat-label" data-i18n="procedures.stats.completed">مكتملة</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-clock-rotate-left"></i></div>
+            <div class="stat-info"><span class="stat-value" id="procstat-postponed">0</span><span class="stat-label" data-i18n="procedures.stats.postponed">مؤجلة</span></div>
+          </div>
+        </div>
+
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="proc-search" placeholder="بحث سريع (الرقم، الملف، الاسم، CIN، النوع)..."
+                   data-i18n-placeholder="procedures.search">
+            <button class="search-clear" id="proc-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
+          </div>
+          <div class="toolbar-actions">
+            <span class="filter-chip" id="proc-filter-chip" hidden></span>
+            <button class="btn btn-ghost" id="proc-filter"><i class="fas fa-filter"></i><span data-i18n="procedures.filter">تصفية</span></button>
+            <button class="btn btn-primary" id="proc-add"><i class="fas fa-plus"></i><span data-i18n="procedures.add">إجراء جديد</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead id="proc-thead"></thead>
+              <tbody id="proc-tbody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="proc-empty">
+              <i class="fas fa-list-check"></i>
+              <p data-i18n="procedures.empty">لا توجد إجراءات.</p>
+              <p data-i18n="procedures.emptyHint">ابدأ بإنشاء إجراء جديد.</p>
+            </div>
+          </div>
+          <div class="table-footer" id="proc-footer">
+            <span id="proc-count"></span>
+            <button class="btn btn-ghost" id="proc-more"><i class="fas fa-chevron-down"></i><span data-i18n="procedures.loadMore">تحميل المزيد</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: PVS (المحاضر) ============ -->
+      <section class="page" id="page-pvs">
+        <div class="stats-grid pv-stats">
+          <div class="stat-card" data-accent="primary">
+            <div class="stat-icon"><i class="fas fa-file-signature"></i></div>
+            <div class="stat-info"><span class="stat-value" id="pvstat-total">0</span><span class="stat-label" data-i18n="pvs.stats.total">جميع المحاضر</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-pen-to-square"></i></div>
+            <div class="stat-info"><span class="stat-value" id="pvstat-drafts">0</span><span class="stat-label" data-i18n="pvs.stats.drafts">مسودات</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-circle-check"></i></div>
+            <div class="stat-info"><span class="stat-value" id="pvstat-finalized">0</span><span class="stat-label" data-i18n="pvs.stats.finalized">مُنهية</span></div>
+          </div>
+          <div class="stat-card" data-accent="info">
+            <div class="stat-icon"><i class="fas fa-box-archive"></i></div>
+            <div class="stat-info"><span class="stat-value" id="pvstat-archived">0</span><span class="stat-label" data-i18n="pvs.stats.archived">مؤرشفة</span></div>
+          </div>
+          <div class="stat-card" data-accent="danger">
+            <div class="stat-icon"><i class="fas fa-ban"></i></div>
+            <div class="stat-info"><span class="stat-value" id="pvstat-cancelled">0</span><span class="stat-label" data-i18n="pvs.stats.cancelled">ملغاة</span></div>
+          </div>
+        </div>
+
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="pv-search" placeholder="بحث (رقم المحضر، الإجراء، الملف، الأسماء)..." data-i18n-placeholder="pvs.search">
+            <button class="search-clear" id="pv-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
+          </div>
+          <div class="toolbar-actions">
+            <span class="filter-chip" id="pv-filter-chip" hidden></span>
+            <select class="form-input pv-filter-select" id="pv-filter-status" data-i18n-placeholder="pvs.filterStatus">
+              <option value="" data-i18n="pvs.filterAll">جميع الحالات</option>
+            </select>
+            <button class="btn btn-ghost" id="pv-filter"><i class="fas fa-filter"></i><span data-i18n="pvs.filter">تصفية</span></button>
+            <button class="btn btn-primary" id="pv-add"><i class="fas fa-plus"></i><span data-i18n="pvs.add">محضر جديد</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead id="pv-thead"></thead>
+              <tbody id="pv-tbody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="pv-empty">
+              <i class="fas fa-file-signature"></i>
+              <p data-i18n="pvs.empty">لا توجد محاضر.</p>
+              <p data-i18n="pvs.emptyHint">ابدأ بإنشاء محضر من إجراء.</p>
+            </div>
+          </div>
+          <div class="table-footer" id="pv-footer">
+            <span id="pv-count"></span>
+            <button class="btn btn-ghost" id="pv-more"><i class="fas fa-chevron-down"></i><span data-i18n="pvs.loadMore">تحميل المزيد</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: DOSSIERS ============ -->
+      <section class="page" id="page-dossiers">
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="dossier-search" placeholder="بحث في الملفات..." data-i18n-placeholder="dossiers.search">
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" id="dossier-export"><i class="fas fa-file-csv"></i><span data-i18n="dossiers.export">تصدير CSV</span></button>
+            <button class="btn btn-primary" id="dossier-add"><i class="fas fa-plus"></i><span data-i18n="dossiers.add">ملف جديد</span></button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr id="dossier-thead"></tr></thead>
+              <tbody id="dossier-tbody"></tbody>
+            </table>
+            <div class="empty-state" id="dossier-empty">
+              <i class="fas fa-folder-open"></i><p data-i18n="dossiers.empty">لا توجد ملفات.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: CLIENTS ============ -->
+      <section class="page" id="page-clients">
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="client-search" placeholder="بحث في العملاء..." data-i18n-placeholder="clients.search">
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" id="client-export"><i class="fas fa-file-csv"></i><span data-i18n="clients.export">تصدير CSV</span></button>
+            <button class="btn btn-primary" id="client-add"><i class="fas fa-plus"></i><span data-i18n="clients.add">عميل جديد</span></button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr id="client-thead"></tr></thead>
+              <tbody id="client-tbody"></tbody>
+            </table>
+            <div class="empty-state" id="client-empty">
+              <i class="fas fa-users"></i><p data-i18n="clients.empty">لا يوجد عملاء.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: TEMPLATES (مكتبة النماذج) ============ -->
+      <section class="page" id="page-documents">
+        <div class="stats-grid tpl-stats">
+          <div class="stat-card" data-accent="primary">
+            <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+            <div class="stat-info"><span class="stat-value" id="tplstat-total">0</span><span class="stat-label" data-i18n="documents.stats.total">النماذج</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-toggle-on"></i></div>
+            <div class="stat-info"><span class="stat-value" id="tplstat-active">0</span><span class="stat-label" data-i18n="documents.stats.active">النشطة</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-toggle-off"></i></div>
+            <div class="stat-info"><span class="stat-value" id="tplstat-inactive">0</span><span class="stat-label" data-i18n="documents.stats.inactive">غير النشطة</span></div>
+          </div>
+          <div class="stat-card" data-accent="danger">
+            <div class="stat-icon"><i class="fas fa-box-archive"></i></div>
+            <div class="stat-info"><span class="stat-value" id="tplstat-archived">0</span><span class="stat-label" data-i18n="documents.stats.archived">المؤرشفة</span></div>
+          </div>
+        </div>
+
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="tpl-search" data-i18n-placeholder="documents.templates.search">
+          </div>
+          <div class="toolbar-actions">
+            <span class="filter-chip" id="tpl-filter-chip" hidden></span>
+            <button class="btn btn-ghost" id="tpl-archive-toggle"><i class="fas fa-box-archive"></i><span data-i18n="documents.templates.archivedBtn">الأرشيف</span></button>
+            <button class="btn btn-ghost" id="tpl-filter"><i class="fas fa-filter"></i><span data-i18n="documents.templates.filter">تصفية</span></button>
+            <button class="btn btn-primary" id="tpl-add"><i class="fas fa-plus"></i><span data-i18n="documents.templates.add">نموذج جديد</span></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead id="tpl-thead"></thead>
+              <tbody id="tpl-tbody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="tpl-empty">
+              <i class="fas fa-layer-group"></i>
+              <p data-i18n="documents.templates.empty">لا توجد نماذج بعد.</p>
+            </div>
+          </div>
+          <div class="table-footer" id="tpl-footer">
+            <span id="tpl-count"></span>
+            <button class="btn btn-ghost" id="tpl-more"><i class="fas fa-chevron-down"></i><span data-i18n="documents.templates.loadMore">تحميل المزيد</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: FINANCE (الأداءات والحسابات) ============ -->
+      <section class="page" id="page-finance">
+        <div class="stats-grid fin-stats">
+          <div class="stat-card" data-accent="primary">
+            <div class="stat-icon"><i class="fas fa-coins"></i></div>
+            <div class="stat-info"><span class="stat-value" id="finstat-total">0</span><span class="stat-label" data-i18n="finance.stats.total">جميع الأداءات</span></div>
+          </div>
+          <div class="stat-card" data-accent="warning">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-info"><span class="stat-value" id="finstat-pending">0</span><span class="stat-label" data-i18n="finance.stats.pending">قيد الانتظار</span></div>
+          </div>
+          <div class="stat-card" data-accent="success">
+            <div class="stat-icon"><i class="fas fa-circle-check"></i></div>
+            <div class="stat-info"><span class="stat-value" id="finstat-confirmed">0</span><span class="stat-label" data-i18n="finance.stats.confirmed">مؤكدة</span></div>
+          </div>
+          <div class="stat-card" data-accent="info">
+            <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="stat-info"><span class="stat-value" id="finstat-paid">0</span><span class="stat-label" data-i18n="finance.stats.paid">المبلغ المحصّل</span></div>
+          </div>
+        </div>
+
+        <div class="page-toolbar">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="fin-search" placeholder="بحث في الأداءات..." data-i18n-placeholder="finance.search">
+          </div>
+          <div class="toolbar-actions">
+            <select class="form-input fin-filter-select" id="fin-filter-status">
+              <option value="" data-i18n="finance.filterAll">جميع الحالات</option>
+              <option value="PENDING" data-i18n="finance.payments.statuses.PENDING">قيد الانتظار</option>
+              <option value="CONFIRMED" data-i18n="finance.payments.statuses.CONFIRMED">مؤكد</option>
+              <option value="PAID" data-i18n="finance.payments.statuses.PAID">محصّل</option>
+              <option value="CANCELLED" data-i18n="finance.payments.statuses.CANCELLED">ملغى</option>
+              <option value="REFUNDED" data-i18n="finance.payments.statuses.REFUNDED">مسترد</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- تبويبات الأقسام المالية -->
+        <div class="fin-tabs" id="fin-tabs">
+          <button class="fin-tab active" data-fin-tab="payments"><i class="fas fa-coins"></i> <span data-i18n="finance.payments.title">الأداءات</span></button>
+          <button class="fin-tab" data-fin-tab="assessments"><i class="fas fa-file-invoice-dollar"></i> <span data-i18n="finance.assessments.title">التقييمات</span></button>
+          <button class="fin-tab" data-fin-tab="tariffs"><i class="fas fa-tags"></i> <span data-i18n="finance.tariffs.title">التعريفات</span></button>
+          <button class="fin-tab" data-fin-tab="ledger"><i class="fas fa-book"></i> <span data-i18n="finance.ledger.title">الدفتر المحاسبي</span></button>
+        </div>
+
+        <!-- ============ TAB:Payments ============ -->
+        <div class="fin-panel active" id="fin-panel-payments">
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="fin-pay-thead"></thead>
+                <tbody id="fin-pay-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="fin-pay-empty">
+                <i class="fas fa-coins"></i>
+                <p data-i18n="finance.payments.empty">لا توجد أداءات بعد.</p>
+              </div>
+            </div>
+            <div class="table-footer" id="fin-pay-footer">
+              <span id="fin-pay-count"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ TAB: Assessments ============ -->
+        <div class="fin-panel" id="fin-panel-assessments">
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="fin-assess-thead"></thead>
+                <tbody id="fin-assess-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="fin-assess-empty">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <p data-i18n="finance.assessments.empty">لا توجد تقييمات بعد.</p>
+              </div>
+            </div>
+            <div class="table-footer" id="fin-assess-footer">
+              <span id="fin-assess-count"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ TAB: Tariffs ============ -->
+        <div class="fin-panel" id="fin-panel-tariffs">
+          <div class="card">
+            <div class="page-toolbar" style="margin:-20px -20px 16px;border-bottom:1px solid var(--border);padding-bottom:12px">
+              <h3 style="margin:0" data-i18n="finance.tariffs.title">التعريفات والرسوم</h3>
+              <button class="btn btn-primary" id="fin-tariff-add"><i class="fas fa-plus"></i><span data-i18n="finance.tariffs.add">تعريفة جديدة</span></button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="fin-tariff-thead"></thead>
+                <tbody id="fin-tariff-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="fin-tariff-empty">
+                <i class="fas fa-tags"></i>
+                <p data-i18n="finance.tariffs.empty">لا توجد تعريفات بعد.</p>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:16px">
+            <div class="page-toolbar" style="margin:-20px -20px 16px;border-bottom:1px solid var(--border);padding-bottom:12px">
+              <h3 style="margin:0" data-i18n="finance.rules.title">قواعد الربط</h3>
+              <button class="btn btn-primary" id="fin-rule-add"><i class="fas fa-plus"></i><span data-i18n="finance.rules.add">قاعدة جديدة</span></button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="fin-rule-thead"></thead>
+                <tbody id="fin-rule-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="fin-rule-empty">
+                <i class="fas fa-link"></i>
+                <p data-i18n="finance.rules.empty">لا توجد قواعد بعد.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ TAB: Ledger ============ -->
+        <div class="fin-panel" id="fin-panel-ledger">
+          <div class="dash-grid" style="margin-bottom:16px">
+            <div class="card" id="fin-summary-card">
+              <div class="card-header"><h3 data-i18n="finance.ledger.summary">ملخص مالي</h3></div>
+              <div class="det-grid" id="fin-summary-body"></div>
+            </div>
+            <div class="card" id="fin-dashboard-card">
+              <div class="card-header"><h3 data-i18n="finance.ledger.dashboard">لوحة تحكم مالية</h3></div>
+              <div class="det-grid" id="fin-dashboard-body"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="fin-ledger-thead"></thead>
+                <tbody id="fin-ledger-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="fin-ledger-empty">
+                <i class="fas fa-book"></i>
+                <p data-i18n="finance.ledger.empty">لا توجد سجلات بعد.</p>
+              </div>
+            </div>
+            <div class="table-footer" id="fin-ledger-footer">
+              <span id="fin-ledger-count"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: REGISTERS (السجلات المهنية) ============ -->
+      <section class="page" id="page-registers">
+        <div class="stats-grid reg-stats" id="reg-stats"></div>
+
+        <div class="fin-tabs" id="reg-tabs">
+          <button class="fin-tab active" data-reg-tab="daily"><i class="fas fa-list-check"></i> <span data-i18n="registers.tabs.daily">السجل اليومي</span></button>
+          <button class="fin-tab" data-reg-tab="accounting"><i class="fas fa-calculator"></i> <span data-i18n="registers.tabs.accounting">السجل الحسابي</span></button>
+          <button class="fin-tab" data-reg-tab="corrections"><i class="fas fa-pen-ruler"></i> <span data-i18n="registers.tabs.corrections">التصحيحات</span></button>
+          <button class="fin-tab" data-reg-tab="periods"><i class="fas fa-calendar-lock"></i> <span data-i18n="registers.tabs.periods">الفترات</span></button>
+          <button class="fin-tab" data-reg-tab="audit"><i class="fas fa-shield-halved"></i> <span data-i18n="registers.tabs.audit">التدقيق</span></button>
+          <button class="fin-tab" data-reg-tab="search"><i class="fas fa-magnifying-glass"></i> <span data-i18n="registers.tabs.search">البحث الشامل</span></button>
+          <button class="fin-tab" data-reg-tab="settings"><i class="fas fa-gear"></i> <span data-i18n="registers.tabs.settings">الإعدادات</span></button>
+        </div>
+
+        <!-- ===== PANEL: السجل اليومي ===== -->
+        <div class="fin-panel active" id="reg-panel-daily">
+          <div class="page-toolbar">
+            <div class="form-grid reg-filters" style="grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px">
+              <input type="date" class="form-input" id="reg-d-from" aria-label="من" data-i18n-aria="registers.from">
+              <input type="date" class="form-input" id="reg-d-to" aria-label="إلى" data-i18n-aria="registers.to">
+              <input type="text" class="form-input" id="reg-d-q" placeholder="بحث (رقم، ملف، طرف، CIN...)" data-i18n-placeholder="registers.dailySearch">
+              <select class="form-input" id="reg-d-status" aria-label="الحالة" data-i18n-aria="registers.statusFilter">
+                <option value="" data-i18n="registers.allStatuses">جميع الحالات</option>
+                <option value="ACTIVE" data-i18n="registers.statusActive">نشط</option>
+                <option value="SUPERSEDED" data-i18n="registers.statusSuperseded">مستبدل</option>
+                <option value="CANCELLED" data-i18n="registers.statusCancelled">ملغى</option>
+              </select>
+              <input type="text" class="form-input" id="reg-d-user" placeholder="المستخدم" data-i18n-placeholder="registers.user">
+              <input type="text" class="form-input" id="reg-d-dossier" placeholder="رقم الملف" data-i18n-placeholder="registers.dossierNo">
+            </div>
+            <div class="toolbar-actions">
+              <button class="btn btn-ghost" id="reg-d-apply"><i class="fas fa-filter"></i><span data-i18n="registers.apply">تطبيق</span></button>
+              <button class="btn btn-ghost" id="reg-d-manual"><i class="fas fa-plus"></i><span data-i18n="registers.manualEntry">إدخال يدوي</span></button>
+              <button class="btn btn-ghost" id="reg-d-csv"><i class="fas fa-file-csv"></i><span>CSV</span></button>
+              <button class="btn btn-ghost" id="reg-d-xls"><i class="fas fa-file-excel"></i><span>Excel</span></button>
+              <button class="btn btn-ghost" id="reg-d-pdf"><i class="fas fa-file-pdf"></i><span>PDF</span></button>
+              <button class="btn btn-ghost" id="reg-d-print"><i class="fas fa-print"></i><span data-i18n="registers.print">طباعة</span></button>
+              <button class="btn btn-primary" id="reg-d-archive"><i class="fas fa-box-archive"></i><span data-i18n="registers.archivePeriod">أرشفة الفترة</span></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-d-thead"></thead>
+                <tbody id="reg-d-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="reg-d-empty"><i class="fas fa-book-open"></i><p data-i18n="registers.emptyEntries">لا توجد قيود في هذه الفترة.</p></div>
+            </div>
+            <div class="table-footer" id="reg-d-footer"></div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: السجل الحسابي ===== -->
+        <div class="fin-panel" id="reg-panel-accounting">
+          <div class="page-toolbar">
+            <div class="form-grid reg-filters" style="grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px">
+              <input type="date" class="form-input" id="reg-a-from" aria-label="من" data-i18n-aria="registers.from">
+              <input type="date" class="form-input" id="reg-a-to" aria-label="إلى" data-i18n-aria="registers.to">
+              <input type="text" class="form-input" id="reg-a-q" placeholder="بحث (رقم، ملف، وصل...)" data-i18n-placeholder="registers.accountingSearch">
+              <select class="form-input" id="reg-a-status" aria-label="الحالة" data-i18n-aria="registers.statusFilter">
+                <option value="" data-i18n="registers.allStatuses">جميع الحالات</option>
+                <option value="ACTIVE" data-i18n="registers.statusActive">نشط</option>
+                <option value="SUPERSEDED" data-i18n="registers.statusSuperseded">مستبدل</option>
+                <option value="CANCELLED" data-i18n="registers.statusCancelled">ملغى</option>
+              </select>
+              <input type="text" class="form-input" id="reg-a-user" placeholder="المستخدم" data-i18n-placeholder="registers.user">
+              <input type="text" class="form-input" id="reg-a-dossier" placeholder="رقم الملف" data-i18n-placeholder="registers.dossierNo">
+            </div>
+            <div class="toolbar-actions">
+              <button class="btn btn-ghost" id="reg-a-apply"><i class="fas fa-filter"></i><span data-i18n="registers.apply">تطبيق</span></button>
+              <button class="btn btn-ghost" id="reg-a-manual"><i class="fas fa-plus"></i><span data-i18n="registers.manualEntry">إدخال يدوي</span></button>
+              <button class="btn btn-ghost" id="reg-a-csv"><i class="fas fa-file-csv"></i><span>CSV</span></button>
+              <button class="btn btn-ghost" id="reg-a-xls"><i class="fas fa-file-excel"></i><span>Excel</span></button>
+              <button class="btn btn-ghost" id="reg-a-pdf"><i class="fas fa-file-pdf"></i><span>PDF</span></button>
+              <button class="btn btn-ghost" id="reg-a-print"><i class="fas fa-print"></i><span data-i18n="registers.print">طباعة</span></button>
+              <button class="btn btn-primary" id="reg-a-archive"><i class="fas fa-box-archive"></i><span data-i18n="registers.archivePeriod">أرشفة الفترة</span></button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-a-thead"></thead>
+                <tbody id="reg-a-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="reg-a-empty"><i class="fas fa-calculator"></i><p data-i18n="registers.emptyEntries">لا توجد قيود في هذه الفترة.</p></div>
+            </div>
+            <div class="table-footer" id="reg-a-footer"></div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: التصحيحات ===== -->
+        <div class="fin-panel" id="reg-panel-corrections">
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-c-thead"></thead>
+                <tbody id="reg-c-tbody"></tbody>
+              </table>
+              <div class="empty-state empty-state-sm" id="reg-c-empty"><i class="fas fa-pen-ruler"></i><p data-i18n="registers.emptyCorrections">لا توجد طلبات تصحيح.</p></div>
+            </div>
+            <div class="table-footer" id="reg-c-footer"></div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: الفترات ===== -->
+        <div class="fin-panel" id="reg-panel-periods">
+          <div class="page-toolbar">
+            <div class="toolbar-actions" style="margin:0">
+              <select class="form-input" id="reg-p-register" style="min-width:280px"></select>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-p-thead"></thead>
+                <tbody id="reg-p-tbody"></tbody>
+              </table>
+              <div class="empty-state empty-state-sm" id="reg-p-empty"><i class="fas fa-calendar"></i><p data-i18n="registers.emptyPeriods">لا توجد فترات مسجلة بعد.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: التدقيق ===== -->
+        <div class="fin-panel" id="reg-panel-audit">
+          <div class="page-toolbar">
+            <div class="toolbar-actions" style="margin:0">
+              <select class="form-input" id="reg-u-register" style="min-width:280px"></select>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-u-thead"></thead>
+                <tbody id="reg-u-tbody"></tbody>
+              </table>
+              <div class="empty-state empty-state-sm" id="reg-u-empty"><i class="fas fa-shield-halved"></i><p data-i18n="registers.emptyAudit">لا توجد عمليات تدقيق.</p></div>
+            </div>
+            <div class="table-footer" id="reg-u-footer"></div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: البحث الشامل ===== -->
+        <div class="fin-panel" id="reg-panel-search">
+          <div class="card">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="reg-search-q" placeholder="ابحث في جميع السجلات (رقم تسلسلي، رقم إجراء، ملف، CIN، وصل...)" data-i18n-placeholder="registers.searchAll">
+              <button class="search-clear" id="reg-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead id="reg-search-thead"></thead>
+                <tbody id="reg-search-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="reg-search-empty"><i class="fas fa-magnifying-glass"></i><p data-i18n="registers.searchHint">اكتب للبحث في السجلات.</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: الإعدادات ===== -->
+        <div class="fin-panel" id="reg-panel-settings">
+          <div class="data-note" style="margin-bottom:14px">
+            <i class="fas fa-scale-balanced"></i>
+            <div>
+              <strong data-i18n="registers.legalRef">مرجع قانوني — المادة 37 من القانون رقم 46.21</strong>
+              <p data-i18n="registers.legalRefHint">السجلان مرقمان تسلسلياً دون بياض أو شطب أو فراغ؛ يوقعهما رئيس المحكمة على أول وآخر صفحة في النسخة الورقية. نموذج كل سجل تحدده نص تنظيمي (المرسوم 2.25.885/BO 7506) لم يُنشر بعد — هذه النماذج مؤقتة وقابلة للتهيئة، وأي طباعة تحمل تنويهاً بذلك.</p>
+            </div>
+          </div>
+          <div id="reg-settings-body"></div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: ARCHIVE ============ -->
+      <section class="page" id="page-archive">
+        <div class="page-toolbar">
+          <div class="toolbar-actions">
+            <select class="form-input" id="arch-filter-kind" style="min-width:170px">
+              <option value="" data-i18n="archive.kindAll">كل الأنواع</option>
+              <option value="pv" data-i18n="archive.kindPv">المحاضر</option>
+              <option value="receipt" data-i18n="archive.kindReceipt">الوصولات</option>
+              <option value="document" data-i18n="archive.kindDocument">المستندات</option>
+              <option value="register-archive" data-i18n="archive.kindRegisterArchive">أرشيف السجلات</option>
+              <option value="other" data-i18n="archive.kindOther">أخرى</option>
+            </select>
+            <select class="form-input" id="arch-filter-status" style="min-width:150px">
+              <option value="" data-i18n="archive.statusAll">كل الحالات</option>
+              <option value="active" data-i18n="archive.statusActive">نشط</option>
+              <option value="archived" data-i18n="archive.statusArchived">مؤرشف</option>
+              <option value="sealed" data-i18n="archive.statusSealed">مختوم</option>
+            </select>
+            <div class="search-box" style="flex:1;min-width:220px">
+              <i class="fas fa-search"></i>
+              <input type="text" id="arch-search" data-i18n-placeholder="archive.search">
+              <button class="search-clear" id="arch-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
+            </div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn btn-ghost" id="arch-open-dir"><i class="fas fa-folder-open"></i><span data-i18n="archive.openDir">فتح مجلد الأرشيف</span></button>
+            <div class="toolbar-actions" id="arch-backup-actions" style="margin:0" hidden>
+              <button class="btn btn-ghost" id="arch-backup"><i class="fas fa-file-zipper"></i><span data-i18n="archive.backup">نسخة احتياطية (ZIP)</span></button>
+              <button class="btn btn-ghost" id="arch-restore"><i class="fas fa-rotate-left"></i><span data-i18n="archive.restore">استعادة نسخة</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="arch-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px"></div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead id="arch-thead"></thead>
+              <tbody id="arch-tbody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="arch-empty"><i class="fas fa-box-archive"></i><p data-i18n="archive.empty">لا وثائق في الأرشيف بعد.</p></div>
+          </div>
+          <div class="table-footer" id="arch-footer"></div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: SETTINGS ============ -->
+      <section class="page" id="page-settings">
+        <div class="settings-grid">
+          <div class="card">
+            <div class="card-header"><h3 data-i18n="settings.office">بيانات المكتب</h3></div>
+            <form id="office-form" class="form-grid">
+              <label><span data-i18n="settings.officeName">اسم المكتب</span><input type="text" id="office-name"></label>
+              <label><span data-i18n="settings.officeAddress">العنوان</span><input type="text" id="office-address"></label>
+              <label><span data-i18n="settings.officePhone">الهاتف</span><input type="text" id="office-phone"></label>
+              <label><span data-i18n="settings.officeAppNumber">رقم الترسيم</span><input type="text" id="office-number"></label>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="office-save"><i class="fas fa-save"></i><span data-i18n="settings.save">حفظ</span></button>
+                <span class="form-status" id="office-status"></span>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h3 data-i18n="settings.theme">المظهر</h3></div>
+            <div class="theme-options">
+              <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i><span data-i18n="settings.light">فاتح</span></button>
+              <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i><span data-i18n="settings.dark">داكن</span></button>
+            </div>
+            <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.language">اللغة</h3></div>
+            <p class="hint" data-i18n="settings.languageHint">تبديل اللغة يتم أيضاً من الشريط العلوي</p>
+            <div class="data-note">
+              <i class="fas fa-database"></i>
+              <div>
+                <strong data-i18n="settings.data">البيانات والحفظ</strong>
+                <p data-i18n="settings.dataHint">تُحفظ البيانات تلقائياً في مجلد بيانات التطبيق (JSON).</p>
+              </div>
+            </div>
+            <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.about">حول التطبيق</h3></div>
+            <p class="hint" data-i18n="settings.aboutText">إصدار 0.1.0 — بنية أساسية.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODAL (موحد) ==================== -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">نموذج</h3>
+        <button class="icon-btn" id="modal-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body" id="modal-body"><!-- يتم التعبئة ديناميكياً --></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ==================== WIZARD (إجراء جديد) ==================== -->
+  <div class="modal-backdrop" id="wizard-backdrop">
+    <div class="modal modal-wide" id="wizard-modal">
+      <div class="modal-header">
+        <h3 data-i18n="wizard.title">إجراء جديد</h3>
+        <button class="icon-btn" id="wizard-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="wizard-steps" id="wizard-steps"></div>
+      <div class="modal-body wizard-body" id="wizard-body"></div>
+      <div class="modal-footer" id="wizard-footer">
+        <button class="btn btn-ghost" id="wizard-back"><i class="fas fa-arrow-right"></i><span data-i18n="wizard.back">السابق</span></button>
+        <button class="btn btn-primary" id="wizard-next"><span data-i18n="wizard.next">التالي</span><i class="fas fa-arrow-left"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DETAIL (تفاصيل الإجراء) ==================== -->
+  <div class="modal-backdrop" id="detail-backdrop">
+    <div class="modal modal-lg" id="detail-modal">
+      <div class="modal-header">
+        <h3 id="detail-title">تفاصيل</h3>
+        <button class="icon-btn" id="detail-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="detail-tabs" id="detail-tabs"></div>
+      <div class="modal-body detail-body" id="detail-body"></div>
+      <div class="modal-footer detail-footer" id="detail-footer"></div>
+    </div>
+  </div>
+
+  <!-- ==================== TEMPLATE EDITOR (محرر النماذج) ==================== -->
+  <div class="modal-backdrop" id="tpl-editor-backdrop">
+    <div class="modal modal-xl" id="tpl-editor-modal">
+      <div class="modal-header">
+        <h3 id="tpl-editor-title" data-i18n="documents.editor.title">محرر النموذج</h3>
+        <button class="icon-btn" id="tpl-editor-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body tpl-editor-body">
+        <div class="form-grid tpl-meta">
+          <div class="form-field"><span data-i18n="documents.editor.name">الاسم</span><input class="form-input" id="te-name" type="text"></div>
+          <div class="form-field" id="te-cat-wrap"></div>
+          <div class="form-field" id="te-type-wrap"></div>
+          <div class="form-field"><span data-i18n="documents.editor.lang">اللغة</span>
+            <select class="form-input" id="te-lang">
+              <option value="ar" data-i18n="documents.editor.languageAr">العربية</option>
+              <option value="fr" data-i18n="documents.editor.languageFr">الفرنسية</option>
+            </select>
+          </div>
+          <div class="form-field" style="grid-column:1/-1"><span data-i18n="documents.editor.description">الوصف</span><input class="form-input" id="te-desc" type="text"></div>
+        </div>
+        <div class="te-status-row">
+          <label class="check-inline"><input type="checkbox" id="te-active" checked><span data-i18n="documents.editor.activeLabel">النموذج نشط</span></label>
+          <div class="te-version-row">
+            <label><span data-i18n="documents.editor.version">النسخة</span> <input class="form-input" id="te-version" type="text" value="1.0" style="width:80px"></label>
+            <label><input type="checkbox" id="te-major"> <span data-i18n="documents.editor.major">نسخة رئيسية (Major)</span></label>
+            <span class="hint" id="te-version-hint"></span>
+          </div>
+        </div>
+        <div class="te-editor-wrap">
+          <div class="te-toolbar" id="te-toolbar"></div>
+          <div class="te-area" id="te-area" contenteditable="true" dir="auto" spellcheck="false"></div>
+        </div>
+        <div class="te-vars" id="te-vars"></div>
+      </div>
+      <div class="modal-footer" id="tpl-editor-footer">
+        <button class="btn btn-ghost" id="te-cancel"><span data-i18n="common.cancel">إلغاء</span></button>
+        <button class="btn btn-ghost" id="te-preview"><i class="fas fa-eye"></i> <span data-i18n="common.preview">معاينة</span></button>
+        <button class="btn btn-primary" id="te-save"><i class="fas fa-save"></i> <span data-i18n="common.save">حفظ</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TEMPLATE PREVIEW ==================== -->
+  <div class="modal-backdrop" id="tpl-preview-backdrop">
+    <div class="modal modal-lg" id="tpl-preview-modal">
+      <div class="modal-header">
+        <h3 id="tpl-preview-title" data-i18n="documents.preview.title">معاينة النموذج</h3>
+        <button class="icon-btn" id="tpl-preview-close"><i class="fas fa-xmark"></i></button>
+      </div>
+<div class="tpl-preview-pick">
+          <div class="search-box"><i class="fas fa-search"></i>
+            <input type="text" id="tpl-preview-search" placeholder="اختر إجراءً لمعاينة القيم الحقيقية (اختياري)" data-i18n-placeholder="documents.preview.search">
+          </div>
+          <div class="dos-results hidden" id="tpl-preview-results"></div>
+        </div>
+      <div class="modal-body tpl-preview-body" id="tpl-preview-body">
+        <iframe id="tpl-preview-frame" class="tpl-preview-frame" sandbox="allow-scripts"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="tpl-preview-gen"><i class="fas fa-file-pdf"></i> <span data-i18n="documents.preview.generate">توليد PDF</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TEMPLATE VIEW (تفاصيل/إصدارات) ==================== -->
+  <div class="modal-backdrop" id="tpl-view-backdrop">
+    <div class="modal modal-lg" id="tpl-view-modal">
+      <div class="modal-header">
+        <h3 id="tpl-view-title">تفاصيل النموذج</h3>
+        <button class="icon-btn" id="tpl-view-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body tpl-view-body" id="tpl-view-body"></div>
+      <div class="modal-footer tpl-view-footer" id="tpl-view-footer"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PV CREATE (محضر جديد) ==================== -->
+  <div class="modal-backdrop" id="pv-create-backdrop">
+    <div class="modal modal-lg" id="pv-create-modal">
+      <div class="modal-header">
+        <h3 data-i18n="pvs.create.title">محضر جديد</h3>
+        <button class="icon-btn" id="pv-create-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body pv-create-body">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="pv-create-search" data-i18n-placeholder="pvs.create.searchProc">
+        </div>
+        <div class="dos-results" id="pv-create-procedures"></div>
+        <div class="form-grid" id="pv-create-fields" hidden>
+          <div class="form-field" style="grid-column:1/-1" id="pv-create-selected"></div>
+          <div class="form-field" id="pv-create-type-wrap"></div>
+          <div class="form-field" id="pv-create-template-wrap"></div>
+          <div class="form-field" id="pv-create-lang-wrap"></div>
+          <div class="form-field" style="grid-column:1/-1" id="pv-create-title-wrap"></div>
+          <div class="form-field" style="grid-column:1/-1" id="pv-create-notes-wrap"></div>
+        </div>
+      </div>
+      <div class="modal-footer" id="pv-create-footer">
+        <button class="btn btn-ghost" id="pv-create-cancel"><i class="fas fa-xmark"></i><span data-i18n="common.cancel">إلغاء</span></button>
+        <button class="btn btn-primary" id="pv-create-ok"><i class="fas fa-file-signature"></i><span data-i18n="pvs.create.ok">إنشاء</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PV DETAIL (تفاصيل المحضر) ==================== -->
+  <div class="modal-backdrop" id="pv-detail-backdrop">
+    <div class="modal modal-xl" id="pv-detail-modal">
+      <div class="modal-header">
+        <h3 id="pv-detail-title">تفاصيل المحضر</h3>
+        <button class="icon-btn" id="pv-detail-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="detail-tabs" id="pv-detail-tabs"></div>
+      <div class="modal-body pv-detail-body" id="pv-detail-body"></div>
+      <div class="modal-footer pv-detail-footer" id="pv-detail-footer"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PV EDITOR (محرر المحضر) ==================== -->
+  <div class="modal-backdrop" id="pv-editor-backdrop">
+    <div class="modal modal-xl" id="pv-editor-modal">
+      <div class="modal-header">
+        <h3 id="pv-editor-title">تحرير المحضر</h3>
+        <button class="icon-btn" id="pv-editor-close"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body pv-editor-body">
+        <div class="te-status-row">
+          <span class="hint" id="pv-editor-hint"></span>
+        </div>
+        <div class="te-editor-wrap">
+          <div class="te-toolbar" id="pv-editor-toolbar"></div>
+          <div class="te-area" id="pv-editor-area" contenteditable="true" dir="auto" spellcheck="false"></div>
+        </div>
+        <div class="te-vars" id="pv-editor-vars"></div>
+      </div>
+      <div class="modal-footer" id="pv-editor-footer">
+        <button class="btn btn-ghost" id="pv-editor-cancel"><i class="fas fa-xmark"></i><span data-i18n="common.cancel">إلغاء</span></button>
+        <button class="btn btn-ghost" id="pv-editor-preview"><i class="fas fa-eye"></i> <span data-i18n="pvs.editor.preview">معاينة</span></button>
+        <button class="btn btn-primary" id="pv-editor-save"><i class="fas fa-save"></i> <span data-i18n="pvs.editor.save">حفظ</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST ==================== -->
+  <div class="toast-wrap" id="toast-wrap"></div>
+
+  <script src="app.js"></script>
+  <script src="procedures.js"></script>
+  <script src="templatesUi.js"></script>
+  <script src="pvsUi.js"></script>
+  <script src="financeUi.js"></script>
+  <script src="registersUi.js"></script>
+  <script src="archiveUi.js"></script>
+</body>
+</html>
