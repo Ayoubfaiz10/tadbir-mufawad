@@ -858,9 +858,16 @@
   function showLogin() {
     const backdrop = document.getElementById('login-backdrop');
     backdrop.classList.add('show');
+    const welcome = document.getElementById('login-welcome');
+    if (welcome) welcome.textContent = t('auth.title');
     document.getElementById('login-error').textContent = '';
     document.getElementById('login-password').value = '';
-    document.getElementById('login-username').focus();
+    const usernameInput = document.getElementById('login-username');
+    let savedUser = '';
+    try { savedUser = localStorage.getItem('huissier-username') || ''; } catch (e) {}
+    usernameInput.value = savedUser;
+    usernameInput.readOnly = !!savedUser;
+    document.getElementById(savedUser ? 'login-password' : 'login-username').focus();
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errEl = document.getElementById('login-error');
@@ -873,6 +880,7 @@
       try {
         const user = await API.authLogin(username, password);
         state.currentUser = user;
+        try { localStorage.setItem('huissier-username', username); } catch (e) {}
         backdrop.classList.remove('show');
         updateSecurityCard();
         bootApp();
@@ -886,6 +894,8 @@
   function showSetup() {
     const backdrop = document.getElementById('login-backdrop');
     backdrop.classList.add('show');
+    const welcome = document.getElementById('login-welcome');
+    if (welcome) welcome.textContent = t('auth.createAccount');
     document.getElementById('login-form').style.display = 'none';
     const setupForm = document.getElementById('setup-form');
     setupForm.style.display = 'grid';
@@ -915,6 +925,7 @@
       try {
         const user = await API.authSetupInitial(username, displayName, password);
         state.currentUser = user;
+        try { localStorage.setItem('huissier-username', username); } catch (e) {}
         backdrop.classList.remove('show');
         location.reload();
       } catch (err) {

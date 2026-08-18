@@ -7,6 +7,7 @@
    ================================================================ */
 
 const { get, all, run } = require('../db/database').helpers;
+const { persist } = require('../db/database');
 const { verifyPassword, hashPassword } = require('./pwHash');
 
 /* جلسة فارغة = غير مسجّل الدخول */
@@ -71,6 +72,7 @@ function changePassword(currentPassword, newPassword) {
   const hash = hashPassword(newPassword);
   run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, currentUser.id]);
   logAudit('auth.password_changed', 'user', user.id, user.username, {});
+  persist();
   return toPublic(user);
 }
 
@@ -137,6 +139,7 @@ function setupInitial(username, displayName, password) {
     run('UPDATE users SET username = ?, display_name = ?, password_hash = ? WHERE id = ?', [uname, dname, hash, target.id]);
   }
   logAudit('auth.setup_initial', 'user', target.id, uname, {});
+  persist();
   return login(uname, password);
 }
 
@@ -158,6 +161,7 @@ function createUser(username, displayName, role, password) {
     [uname, String(displayName || '').trim(), role, hashPassword(password)]
   );
   logAudit('auth.user_created', 'user', ins.lastId, currentUser.username, { username: uname, role });
+  persist();
   return all('SELECT id, username, display_name, role, active FROM users WHERE id = ?', [ins.lastId])[0];
 }
 
@@ -171,6 +175,7 @@ function setUserActive(id, active) {
   if (target.role === 'admin' && !active && isAdmin <= 1) throw new Error('AUTH:LAST_ADMIN');
   run('UPDATE users SET active = ? WHERE id = ?', [active ? 1 : 0, uid]);
   logAudit(active ? 'auth.user_activated' : 'auth.user_deactivated', 'user', uid, currentUser.username, { username: target.username });
+  persist();
   return all('SELECT id, username, display_name, role, active FROM users WHERE id = ?', [uid])[0];
 }
 
@@ -184,6 +189,7 @@ function deleteUser(id) {
   if (target.role === 'admin' && isAdmin <= 1) throw new Error('AUTH:LAST_ADMIN');
   run('DELETE FROM users WHERE id = ?', [uid]);
   logAudit('auth.user_deleted', 'user', uid, currentUser.username, { username: target.username });
+  persist();
   return { ok: true };
 }
 
@@ -196,6 +202,7 @@ function resetPassword(id, newPassword) {
   if (!target) throw new Error('NOT_FOUND:user:' + uid);
   run('UPDATE users SET password_hash = ? WHERE id = ?', [hashPassword(newPassword), uid]);
   logAudit('auth.password_reset', 'user', uid, currentUser.username, { username: target.username });
+  persist();
   return { ok: true };
 }
 

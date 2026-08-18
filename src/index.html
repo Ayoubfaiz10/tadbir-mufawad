@@ -976,28 +976,47 @@
   <!-- ==================== LOGIN OVERLAY ==================== -->
   <div class="modal-backdrop" id="login-backdrop" style="z-index:9999">
     <div class="modal modal-sm" id="login-modal">
-      <div class="modal-header">
-        <h3 data-i18n="auth.title">تسجيل الدخول</h3>
+      <div class="modal-header login-header">
+        <div class="login-brand">
+          <i class="fas fa-scale-balanced" aria-hidden="true"></i>
+          <span>
+            <strong data-i18n="appName">تسيير المفوض القضائي</strong>
+            <small id="login-welcome" data-i18n="auth.title">تسجيل الدخول</small>
+          </span>
+        </div>
       </div>
       <div class="modal-body">
-        <div class="login-brand">
-          <i class="fas fa-scale-balanced"></i>
-          <strong data-i18n="appName">تسيير المفوض القضائي</strong>
-        </div>
-
         <form id="login-form" class="form-grid" style="grid-template-columns:1fr">
-          <label><span data-i18n="auth.username">اسم المستخدم</span><input type="text" id="login-username" autocomplete="username"></label>
-          <label><span data-i18n="auth.password">كلمة المرور</span><input type="password" id="login-password" autocomplete="current-password"></label>
+          <label>
+            <span data-i18n="auth.username">اسم المستخدم</span>
+            <span class="login-field"><i class="fas fa-user" aria-hidden="true"></i><input type="text" id="login-username" autocomplete="username"></span>
+          </label>
+          <label>
+            <span data-i18n="auth.password">كلمة المرور</span>
+            <span class="login-field"><i class="fas fa-lock" aria-hidden="true"></i><input type="password" id="login-password" autocomplete="current-password"></span>
+          </label>
           <p class="form-status" id="login-error" style="color:var(--danger)"></p>
           <button type="submit" class="btn btn-primary"><i class="fas fa-right-to-bracket"></i><span data-i18n="auth.enter">دخول</span></button>
         </form>
 
         <form id="setup-form" class="form-grid" style="grid-template-columns:1fr;display:none">
-          <p class="hint" data-i18n="auth.setupHint">أنشئ حساب مسؤول المكتب: اسم المستخدم وكلمة المرور اللذان ستستعملهما للدخول</p>
-          <label><span data-i18n="auth.username">اسم المستخدم</span><input type="text" id="setup-username" value="admin" autocomplete="username"></label>
-          <label><span data-i18n="auth.displayName">الاسم الكامل</span><input type="text" id="setup-displayname" autocomplete="name"></label>
-          <label><span data-i18n="auth.password">كلمة المرور</span><input type="password" id="setup-password" autocomplete="new-password"></label>
-          <label><span data-i18n="auth.confirmPassword">تأكيد كلمة المرور</span><input type="password" id="setup-password2" autocomplete="new-password"></label>
+          <p class="login-tip"><i class="fas fa-circle-info" aria-hidden="true"></i><span data-i18n="auth.setupHint">أنشئ حساب مسؤول المكتب: اسم المستخدم وكلمة المرور اللذان ستستعملهما للدخول</span></p>
+          <label>
+            <span data-i18n="auth.username">اسم المستخدم</span>
+            <span class="login-field"><i class="fas fa-user" aria-hidden="true"></i><input type="text" id="setup-username" value="admin" autocomplete="username"></span>
+          </label>
+          <label>
+            <span data-i18n="auth.displayName">الاسم الكامل</span>
+            <span class="login-field"><i class="fas fa-id-card" aria-hidden="true"></i><input type="text" id="setup-displayname" autocomplete="name"></span>
+          </label>
+          <label>
+            <span data-i18n="auth.password">كلمة المرور</span>
+            <span class="login-field"><i class="fas fa-lock" aria-hidden="true"></i><input type="password" id="setup-password" autocomplete="new-password"></span>
+          </label>
+          <label>
+            <span data-i18n="auth.confirmPassword">تأكيد كلمة المرور</span>
+            <span class="login-field"><i class="fas fa-lock" aria-hidden="true"></i><input type="password" id="setup-password2" autocomplete="new-password"></span>
+          </label>
           <p class="form-status" id="setup-error" style="color:var(--danger)"></p>
           <button type="submit" class="btn btn-primary"><i class="fas fa-user-shield"></i><span data-i18n="auth.createAccount">إنشاء الحساب</span></button>
         </form>
