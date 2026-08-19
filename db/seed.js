@@ -1126,4 +1126,39 @@ function seedRegisters({ get, run, tx }) {
   });
 }
 
-module.exports = { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters, seedDocumentTypes };
+/* ================================================================
+   مراحل تدفق العمل (Workflow Stages) — 8 مراحل لكل نوع إجراء
+   تُضاف عند أول تشغيل فقط (idempotent).
+   ================================================================ */
+function seedWorkflowStages({ get, all, run, tx }) {
+  const count = get('SELECT COUNT(*) AS c FROM workflow_stages').c;
+  if (count > 0) return;
+
+  const allTypes = all('SELECT id, code FROM procedure_types');
+  if (!allTypes) return;
+
+  const stages = [
+    { code: 'RECEPTION',      ar: 'الاستقبال',         fr: 'Réception',           descAr: 'إنشاء الملف والعميل والأطراف وربطهم',                                  descFr: 'Créer le dossier, client et parties',                                   artifacts: '[]',                    actions: '[]' },
+    { code: 'TYPE_SELECTION', ar: 'تحديد النوع',       fr: 'Choix du type',       descAr: 'اختيار نوع الإجراء مع الحقول المهنية الخاصة به',                        descFr: 'Choisir le type avec les champs professionnels',                        artifacts: '[]',                    actions: '[]' },
+    { code: 'EXECUTION',      ar: 'الإنجاز',           fr: 'Exécution',           descAr: 'تنفيذ الإجراء وفق المراحل الخاصة بالنوع',                               descFr: 'Exécuter la procédure selon le type',                                  artifacts: '[]',                    actions: '[]' },
+    { code: 'DOCUMENTATION',  ar: 'التوثيق',           fr: 'Documentation',       descAr: 'إنشاء المحضر المناسب مع تعبئة المتغيرات الحقيقية',                     descFr: 'Créer le PV avec les variables réelles',                               artifacts: '["PV"]',                actions: '["auto_create_pv"]' },
+    { code: 'FINALIZATION',   ar: 'الإنهاء',           fr: 'Finalisation',        descAr: 'إنهاء المحضر وتوليد النسخ النهائية وربطها بالإجراء',                     descFr: 'Finaliser le PV et générer les copies',                                artifacts: '["PV_FINAL"]',          actions: '["finalize_pv","generate_copies"]' },
+    { code: 'BILLING',        ar: 'الحساب',            fr: 'Facturation',         descAr: 'إنشاء التقييم واحساب التعريفة وتسجيل الأداء والوصل',                    descFr: 'Créer l\'évaluation, calculer les frais, enregistrer le paiement',     artifacts: '["ASSESSMENT","RECEIPT"]', actions: '["create_assessment"]' },
+    { code: 'REGISTER',       ar: 'السجل',             fr: 'Registre',            descAr: 'إنشاء القيد المهني المناسب أوتوماتيكياً ومراجعته',                     descFr: 'Créer l\'enregistrement professionnel automatiquement',                 artifacts: '[]',                    actions: '["auto_register_entry"]' },
+    { code: 'ARCHIVE',        ar: 'الأرشيف',           fr: 'Archivage',           descAr: 'حفظ الوثيقة النهائية وربطها بالنسخ والمرفقات والفترة',                  descFr: 'Archiver le document final avec copies et période',                     artifacts: '["ARCHIVE"]',           actions: '["auto_archive"]' }
+  ];
+
+  return tx(() => {
+    allTypes.forEach((t) => {
+      stages.forEach((s, i) => {
+        run(
+          `INSERT INTO workflow_stages (procedure_type_id, code, name_ar, name_fr, description_ar, description_fr, sort_order, required_artifacts, auto_actions, active)
+           VALUES (?,?,?,?,?,?,?,?,?,1)`,
+          [t.id, s.code, s.ar, s.fr, s.descAr, s.descFr, i + 1, s.artifacts, s.actions]
+        );
+      });
+    });
+  });
+}
+
+module.exports = { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters, seedDocumentTypes, seedWorkflowStages };

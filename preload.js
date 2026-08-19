@@ -218,5 +218,13 @@ contextBridge.exposeInMainWorld('appAPI', {
   regArchivePeriod: expose('reg:archivePeriod'),
   regExportCsv: expose('reg:export'),
   regExportPdf: expose('reg:exportPdf'),
-  regPrint: expose('reg:print')
+  regPrint: expose('reg:print'),
+
+  /* ---------- محرك تدفق العمل ---------- */
+  wfStatus: expose('wf:status'),
+  wfProgress: expose('wf:progress'),
+  wfStages: expose('wf:stages'),
+  wfCompleteStage: expose('wf:completeStage'),
+  wfRevertStage: expose('wf:revertStage'),
+  wfStats: expose('wf:stats')
 });

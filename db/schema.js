@@ -1005,6 +1005,43 @@ const MIGRATIONS = [
       ALTER TABLE procedures ADD COLUMN archived_at TEXT;
       CREATE INDEX IF NOT EXISTS idx_procedures_archived ON procedures(archived);
     `
+  },
+  // ——————————— Migration v11: محرك تدفق العمل (Workflow Engine) ————————
+  {
+    version: 11,
+    up: `
+      CREATE TABLE IF NOT EXISTS workflow_stages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        procedure_type_id INTEGER NOT NULL REFERENCES procedure_types(id),
+        code TEXT NOT NULL,
+        name_ar TEXT NOT NULL,
+        name_fr TEXT NOT NULL,
+        description_ar TEXT NOT NULL DEFAULT '',
+        description_fr TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        required_artifacts TEXT NOT NULL DEFAULT '[]',
+        auto_actions TEXT NOT NULL DEFAULT '[]',
+        active INTEGER NOT NULL DEFAULT 1
+      );
+      CREATE INDEX IF NOT EXISTS idx_wf_stages_type ON workflow_stages(procedure_type_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_wf_stages_type_code ON workflow_stages(procedure_type_id, code);
+
+      CREATE TABLE IF NOT EXISTS procedure_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        procedure_id INTEGER NOT NULL REFERENCES procedures(id) ON DELETE CASCADE,
+        stage_code TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        completed_at TEXT,
+        completed_by TEXT NOT NULL DEFAULT '',
+        notes TEXT NOT NULL DEFAULT '',
+        artifacts TEXT NOT NULL DEFAULT '[]',
+        UNIQUE(procedure_id, stage_code)
+      );
+      CREATE INDEX IF NOT EXISTS idx_proc_progress_proc ON procedure_progress(procedure_id);
+
+      ALTER TABLE procedures ADD COLUMN current_stage TEXT NOT NULL DEFAULT 'RECEPTION';
+      ALTER TABLE procedures ADD COLUMN workflow_completed_at TEXT;
+    `
   }
 ];
 

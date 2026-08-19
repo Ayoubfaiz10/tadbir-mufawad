@@ -103,6 +103,12 @@ function createProcedure(input, actorUser) {
       user
     });
 
+    // تهيئة تدفق العمل (Workflow)
+    try {
+      const workflowService = require('./workflowService');
+      workflowService.initializeProgress(procedureId);
+    } catch (e) { /* تجاهل إذا لم يكن جدول workflow متاحاً */ }
+
     // السجل المهني اليومي: ربط تلقائي (قابل للإلغاء من إعدادات السجلات)
     registersService.autoCreateDailyForProcedure(procedureId);
 

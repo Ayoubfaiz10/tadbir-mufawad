@@ -797,6 +797,17 @@ function register() {
     registersService.auditExport(res.register.id, 'print');
     return { ok: true, path: tmp };
   });
+
+  /* ---------- محرك تدفق العمل (Workflow) ---------- */
+  const workflowService = require('./services/workflowService');
+  genHandle('wf:status', (procedureId) => workflowService.getWorkflowStatus(int(procedureId)));
+  genHandle('wf:progress', (procedureId) => workflowService.getProcedureProgress(int(procedureId)));
+  genHandle('wf:stages', (procedureTypeId) => workflowService.getStagesForType(int(procedureTypeId)));
+  genHandle('wf:completeStage', (procedureId, stageCode, notes) =>
+    workflowService.completeStage(int(procedureId), str(stageCode, 50), str(notes || '', 2000)));
+  genHandle('wf:revertStage', (procedureId, stageCode, reason) =>
+    workflowService.revertStage(int(procedureId), str(stageCode, 50), str(reason, 2000)));
+  genHandle('wf:stats', () => workflowService.workflowStats());
 }
 
 module.exports = { register };
