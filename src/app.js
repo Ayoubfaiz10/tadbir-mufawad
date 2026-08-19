@@ -85,6 +85,7 @@
     applyLocale();
     renderAll();
     if (state.currentPage === 'documents' && window.TemplatesModule) window.TemplatesModule.render();
+    if (state.currentPage === 'archive' && window.ArchiveModule) window.ArchiveModule.render();
     if (state.currentPage === 'pvs' && window.PvsModule) window.PvsModule.render();
     if (state.currentPage === 'finance' && window.FinanceModule) window.FinanceModule.render();
     if (state.currentPage === 'registers' && window.RegistersModule) window.RegistersModule.render();
@@ -137,10 +138,10 @@
     if (page === 'clients') renderClients();
     if (page === 'procedures' && window.ProceduresModule) window.ProceduresModule.render();
     if (page === 'documents' && window.TemplatesModule) window.TemplatesModule.render();
+    if (page === 'archive' && window.ArchiveModule) window.ArchiveModule.render();
     if (page === 'pvs' && window.PvsModule) window.PvsModule.render();
     if (page === 'finance' && window.FinanceModule) window.FinanceModule.render();
     if (page === 'registers' && window.RegistersModule) window.RegistersModule.render();
-    if (page === 'archive' && window.ArchiveModule) window.ArchiveModule.render();
     if (fromKeyboard) {
       const pageEl = document.getElementById('page-' + page);
       const first = pageEl ? focusablesIn(pageEl)[0] : null;
@@ -334,7 +335,7 @@
   const NAV_SEARCH = {
     procedures: 'proc-search', pvs: 'pv-search', dossiers: 'dossier-search',
     clients: 'client-search', documents: 'tpl-search', finance: 'fin-search',
-    registers: 'reg-search-q', archive: 'arch-search'
+    registers: 'reg-search-q', archive: 'arc-search'
   };
 
   function focusablesIn(scope) {

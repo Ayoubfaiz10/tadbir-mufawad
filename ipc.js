@@ -28,9 +28,8 @@ const templateService = require('./services/templateService');
 const settingsService = require('./services/settingsService');
 const pvService = require('./services/pvService');
 const pvPdfService = require('./services/pvPdfService');
-const archiveService = require('./services/archiveService');
 const registersService = require('./services/registersService');
-const backupService = require('./services/backupService');
+const archiveStorage = require('./services/archiveStorage');
 const LOCALES_DIR = path.join(__dirname, 'src', 'locales');
 
 /* ---------- أدوات الأمان ---------- */
@@ -104,10 +103,6 @@ function register() {
       date: str(d.date),
       notes: str(d.notes)
     });
-    const st = str(d.status);
-    if (st === 'closed' || st === 'archived') {
-      archiveService.createDossierRef(result.id);
-    }
     return result;
   });
   genHandle('app:deleteDossier', (id) => dossierService.remove(int(id)));
@@ -280,11 +275,7 @@ function register() {
   }));
   genHandle('proc:delete', (id) => procedureService.deleteProcedure(int(id)));
   genHandle('proc:statusChange', (id, to, note) => {
-    const result = procedureService.applyStatus(int(id), str(to), str(note, 1000));
-    if (to === 'COMPLETED' || to === 'CANCELLED') {
-      archiveService.createProcedureRef(int(id));
-    }
-    return result;
+    return procedureService.applyStatus(int(id), str(to), str(note, 1000));
   });
   genHandle('proc:nextStatus', (id) => procedureService.allowedTransitions(int(id)));
 
@@ -413,47 +404,99 @@ function register() {
   genHandle('doc:download', (id) => documentService.downloadDoc(int(id)));
   genHandle('doc:print', (id) => documentService.printDoc(int(id)));
   genHandle('doc:delete', (id) => documentService.deleteDoc(int(id)));
-  genHandle('archive:forProcedure', (procedureId) => documentService.archiveForProcedure(int(procedureId)));
-  genHandle('archive:list', (f) => documentService.listArchive({
-    kind: str(f.kind),
-    status: str(f.status),
-    entityType: str(f.entityType),
-    q: str(f.q, 300),
-    limit: int(f.limit) || 50
+
+  /* ---------- الأرشيف المركزي (Central Archive) ---------- */
+  genHandle('arc:search', (filters) => documentService.searchDocuments(str(filters.q, 300), {
+    page: int(filters.page) || 1,
+    pageSize: int(filters.pageSize) || 25,
+    status: str(filters.status),
+    document_type_id: filters.document_type_id ? int(filters.document_type_id) : undefined,
+    language: str(filters.language),
+    entity_type: str(filters.entity_type),
+    entity_id: filters.entity_id ? int(filters.entity_id) : undefined,
+    dossier_id: filters.dossier_id ? int(filters.dossier_id) : undefined,
+    procedure_id: filters.procedure_id ? int(filters.procedure_id) : undefined,
+    pv_id: filters.pv_id ? int(filters.pv_id) : undefined,
+    period_key: str(filters.period_key),
+    locked: filters.locked !== undefined ? bool(filters.locked) : undefined,
+    includeDeleted: bool(filters.includeDeleted),
+    sha256: str(filters.sha256)
   }));
-  genHandle('archive:stats', () => documentService.stats());
-  genHandle('archive:openDir', async () => {
-    const dir = archiveService.getArchiveDir();
-    if (!dir) throw new Error('ARCHIVE:NOT_INITIALIZED');
-    try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { throw new Error('ARCHIVE:OPEN_FAILED'); }
-    const openRes = await shell.openPath(dir);
-    if (openRes) throw new Error('ARCHIVE:OPEN_FAILED');
-    return { ok: true };
+  genHandle('arc:stats', () => documentService.documentStats());
+  genHandle('arc:get', (id) => documentService.getDoc(int(id)));
+  genHandle('arc:update', (id, input) => documentService.updateDoc(int(id), {
+    title: input.title !== undefined ? str(input.title) : undefined,
+    description: input.description !== undefined ? str(input.description) : undefined,
+    document_type_id: input.document_type_id !== undefined ? int(input.document_type_id) : undefined,
+    status: input.status !== undefined ? str(input.status) : undefined,
+    language: input.language !== undefined ? str(input.language) : undefined,
+    entity_type: input.entity_type !== undefined ? str(input.entity_type) : undefined,
+    entity_id: input.entity_id !== undefined ? int(input.entity_id) : undefined,
+    dossier_id: input.dossier_id !== undefined ? int(input.dossier_id) : undefined,
+    procedure_id: input.procedure_id !== undefined ? int(input.procedure_id) : undefined,
+    pv_id: input.pv_id !== undefined ? int(input.pv_id) : undefined
+  }));
+  genHandle('arc:delete', (id) => documentService.deleteDoc(int(id)));
+  genHandle('arc:permanentDelete', (id) => documentService.permanentDeleteDoc(int(id)));
+  genHandle('arc:restore', (id) => documentService.restoreDoc(int(id)));
+  genHandle('arc:lock', (id) => documentService.lockDoc(int(id)));
+  genHandle('arc:unlock', (id) => documentService.unlockDoc(int(id)));
+  genHandle('arc:versions', (id) => documentService.listVersions(int(id)));
+  genHandle('arc:auditLog', (id, limit) => documentService.getAuditLog(int(id), int(limit) || 50));
+  genHandle('arc:tags', () => documentService.listTags());
+  genHandle('arc:tagAdd', (documentId, name, color) => documentService.addTag(int(documentId), str(name, 100), str(color)));
+  genHandle('arc:tagRemove', (documentId, tagId) => documentService.removeTag(int(documentId), int(tagId)));
+  genHandle('arc:relations', (id) => documentService.listRelations(int(id)));
+  genHandle('arc:relationAdd', (fromId, toId, type, note) => documentService.addRelation(int(fromId), int(toId), str(type, 50), str(note)));
+  genHandle('arc:relationRemove', (fromId, toId, type) => documentService.removeRelation(int(fromId), int(toId), str(type, 50)));
+  genHandle('arc:docTypes', () => documentService.listDocTypesWithCounts());
+  genHandle('arc:docTypeAdd', (input) => documentService.addDocType({
+    code: str(input.code, 60).toUpperCase(),
+    nameAr: str(input.nameAr), nameFr: str(input.nameFr),
+    descriptionAr: str(input.descriptionAr), descriptionFr: str(input.descriptionFr),
+    icon: str(input.icon, 50), numberingPattern: str(input.numberingPattern, 120),
+    sortOrder: int(input.sortOrder)
+  }));
+  genHandle('arc:docTypeUpdate', (id, input) => documentService.updateDocType(int(id), {
+    nameAr: input.nameAr !== undefined ? str(input.nameAr) : undefined,
+    nameFr: input.nameFr !== undefined ? str(input.nameFr) : undefined,
+    descriptionAr: input.descriptionAr !== undefined ? str(input.descriptionAr) : undefined,
+    descriptionFr: input.descriptionFr !== undefined ? str(input.descriptionFr) : undefined,
+    icon: input.icon !== undefined ? str(input.icon) : undefined,
+    active: input.active !== undefined ? bool(input.active) : undefined,
+    sortOrder: input.sortOrder !== undefined ? int(input.sortOrder) : undefined,
+    numberingPattern: input.numberingPattern !== undefined ? str(input.numberingPattern) : undefined
+  }));
+  genHandle('arc:docTypeDelete', (id) => documentService.deleteDocType(int(id)));
+  genHandle('arc:archivedTemplates', (f) => templateService.list({
+    page: int(f.page) || 1,
+    pageSize: int(f.pageSize) || 25,
+    q: str(f.q, 300),
+    archivedOnly: true
+  }));
+  genHandle('arc:verifyIntegrity', async (id) => {
+    const doc = documentService.getDoc(int(id));
+    if (!doc || !doc.file_path) throw new Error('DOC:NOT_FOUND');
+    const archiveStorage = require('./services/archiveStorage');
+    const ok = await archiveStorage.verifyIntegrity(doc.file_path, doc.sha256);
+    documentService.logAudit(int(id), 'integrity_check', '', JSON.stringify({ verified: ok }));
+    return { verified: ok };
   });
-  genHandle('archive:dossier', (dossierId) => archiveService.createDossierRef(int(dossierId)));
-  genHandle('archive:procedure', (procedureId) => archiveService.createProcedureRef(int(procedureId)));
-
-  /* ---------- النسخ الاحتياطي والاستعادة (P4) ---------- */
-  genHandle('archive:backup', async () => {
-    const result = await dialog.showSaveDialog({
-      defaultPath: path.join(app.getPath('documents'), 'huissier-backup-' + new Date().toISOString().slice(0, 10) + '.zip'),
-      filters: [{ name: 'ZIP', extensions: ['zip'] }]
-    });
-    if (result.canceled || !result.filePath) return { canceled: true };
-    return backupService.createBackupZip(result.filePath, archiveService.getArchiveDir());
-  });
-
-  genHandle('archive:restore', async () => {
-    const result = await dialog.showOpenDialog({
-      filters: [{ name: 'ZIP', extensions: ['zip'] }],
-      properties: ['openFile']
-    });
-    if (result.canceled || !result.filePaths.length) return { canceled: true };
-    const dbPathMain = require('./db/database').getDbPath();
-    const dataDir = dbPathMain ? path.dirname(dbPathMain) : app.getPath('userData');
-    const out = await backupService.restoreBackup(result.filePaths[0], dataDir, archiveService.getArchiveDir());
-    setTimeout(() => { app.relaunch(); app.exit(0); }, 700);
-    return out;
+  genHandle('arc:upload', async (documentId, filePath, originalName, mime) => {
+    const id = int(documentId);
+    const doc = documentService.getDoc(id);
+    if (!doc) throw new Error('DOC:NOT_FOUND');
+    if (doc.locked) throw new Error('DOC:LOCKED');
+    const result = await archiveStorage.storeFileFromPath(str(filePath), str(originalName), { mime: str(mime) });
+    dbCore.helpers.run(
+      `UPDATE documents_v2 SET file_name = ?, storage_name = ?, file_path = ?, original_name = ?,
+       mime = ?, size_bytes = ?, sha256 = ?, checksum_verified = 1, updated_at = datetime('now')
+       WHERE id = ?`,
+      [path.basename(result.filePath), result.storageName, result.filePath, result.originalName,
+       result.mime, result.sizeBytes, result.sha256, id]
+    );
+    documentService.logAudit(id, 'file_uploaded', '', JSON.stringify({ sha256: result.sha256 }));
+    return documentService.getDoc(id);
   });
 
   /* ---------- التدقيق ---------- */
@@ -472,12 +515,11 @@ function register() {
   genHandle('tpl:list', (f) => templateService.list({
     page: int(f.page) || 1,
     pageSize: int(f.pageSize) || 25,
-    q: str(f.q, 300),
+    q: str(f.q || f.search, 300),
     language: str(f.language),
     category: f.category ? int(f.category) : null,
     procedureTypeId: f.procedureTypeId ? int(f.procedureTypeId) : null,
-    status: str(f.status),
-    includeArchived: bool(f.includeArchived)
+    status: str(f.status)
   }));
   genHandle('tpl:stats', () => templateService.stats());
   genHandle('tpl:get', (id) => templateService.get(int(id)));
@@ -632,6 +674,25 @@ function register() {
   genHandle('reg:sealPeriod', (registerId, periodKey, note) => registersService.sealPeriod(int(registerId), str(periodKey), str(note, 1000)));
   genHandle('reg:sealVerify', (sealId) => registersService.verifySeal(int(sealId)));
   genHandle('reg:seals', (registerId) => registersService.listSeals(int(registerId)));
+  genHandle('reg:archivePeriod', async (registerId, periodKey) => {
+    const rid = int(registerId);
+    const pk = str(periodKey, 7);
+    const res = await registersService.listEntries({ registerId: rid, page: 1, pageSize: 500, from: pk + '-01', to: pk + '-31' });
+    if (!res.rows.length) throw new Error('REGISTER:NO_ROWS');
+    const settingsBackend = require('./services/settingsService');
+    const office = settingsBackend.getOffice();
+    const authBackend = require('./services/auth');
+    const now = new Date();
+    const html = registersService.buildRegisterHtml(res.register, res.rows, {
+      lang: 'ar', office,
+      from: res.rows[0].entry_date,
+      to: res.rows[res.rows.length - 1].entry_date,
+      generatedAt: now.toISOString().slice(0, 10),
+      by: authBackend.getCurrentUser().display_name || authBackend.getCurrentUser().username
+    });
+    const buf = await documentService.renderToPdf(html);
+    return registersService.archivePeriod(rid, pk, `سجل ${res.register.code} - ${pk}`, buf);
+  });
   genHandle('reg:periods', (registerId) => registersService.listPeriods(int(registerId)));
   genHandle('reg:periodSetStatus', (registerId, periodKey, status, note) =>
     registersService.setPeriodStatus(int(registerId), str(periodKey), str(status), str(note, 2000)));
@@ -735,28 +796,6 @@ function register() {
     shell.openPath(tmp);
     registersService.auditExport(res.register.id, 'print');
     return { ok: true, path: tmp };
-  });
-
-  /* ---------- السجلات: أرشفة فترة (السجل + الوثيقة معاً) ---------- */
-  genHandle('reg:archivePeriod', async (registerId, periodKey) => {
-    const f = { registerId: int(registerId), from: periodKey + '-01', to: periodKey + '-31' };
-    const res = await registersService.listEntries({ ...regFilters(f), pageSize: 500 });
-    if (!res.rows.length) throw new Error('REGISTER:NO_ROWS');
-    const office = require('./services/settingsService').getOffice();
-    const authBackend = require('./services/auth');
-    const html = registersService.buildRegisterHtml(res.register, res.rows, {
-      lang: 'ar', office, from: periodKey + '-01', to: periodKey + '-31',
-      generatedAt: periodKey + '-01', by: authBackend.getCurrentUser().display_name || authBackend.getCurrentUser().username,
-      watermark: 'نسخة أرشيفية'
-    });
-    const buf = await documentService.renderToPdf(html);
-    const archiveDir = archiveService.getArchiveDir();
-    if (!archiveDir) throw new Error('ARCHIVE:NOT_INITIALIZED');
-    const fileName = `${res.register.code.toLowerCase()}-${periodKey}-archive.pdf`;
-    const filePath = archiveService.archivePathFor('registers', `${res.register.code}-${periodKey}`, fileName);
-    fs.writeFileSync(filePath, buf);
-    const out = registersService.archivePeriod(res.register.id, periodKey, `أرشيف ${res.register.name_ar} — ${periodKey}`, filePath);
-    return { ok: true, filePath, document: out.document_id };
   });
 }
 

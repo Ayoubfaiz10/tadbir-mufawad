@@ -30,9 +30,9 @@
         <button class="nav-item" data-page="dossiers"><i class="fas fa-folder-open"></i><span data-i18n="nav.dossiers">الملفات القضائية</span></button>
         <button class="nav-item" data-page="clients"><i class="fas fa-users"></i><span data-i18n="nav.clients">العملاء</span></button>
         <button class="nav-item" data-page="documents"><i class="fas fa-file-contract"></i><span data-i18n="nav.documents">مكتبة النماذج</span></button>
+        <button class="nav-item" data-page="archive"><i class="fas fa-box-archive"></i><span data-i18n="nav.archive">الأرشيف</span></button>
         <button class="nav-item" data-page="finance"><i class="fas fa-coins"></i><span data-i18n="nav.finance">الأداءات والحسابات</span></button>
         <button class="nav-item" data-page="registers"><i class="fas fa-book-open"></i><span data-i18n="nav.registers">السجلات المهنية</span></button>
-        <button class="nav-item" data-page="archive"><i class="fas fa-box-archive"></i><span data-i18n="nav.archive">الأرشيف</span></button>
         <button class="nav-item" data-page="settings"><i class="fas fa-gear"></i><span data-i18n="nav.settings">الإعدادات</span></button>
       </nav>
       <div class="sidebar-footer">
@@ -320,7 +320,6 @@
           </div>
           <div class="toolbar-actions">
             <span class="filter-chip" id="tpl-filter-chip" hidden></span>
-            <button class="btn btn-ghost" id="tpl-archive-toggle"><i class="fas fa-box-archive"></i><span data-i18n="documents.templates.archivedBtn">الأرشيف</span></button>
             <button class="btn btn-ghost" id="tpl-filter"><i class="fas fa-filter"></i><span data-i18n="documents.templates.filter">تصفية</span></button>
             <button class="btn btn-primary" id="tpl-add"><i class="fas fa-plus"></i><span data-i18n="documents.templates.add">نموذج جديد</span></button>
           </div>
@@ -340,6 +339,95 @@
           <div class="table-footer" id="tpl-footer">
             <span id="tpl-count"></span>
             <button class="btn btn-ghost" id="tpl-more"><i class="fas fa-chevron-down"></i><span data-i18n="documents.templates.loadMore">تحميل المزيد</span></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PAGE: ARCHIVE (الأرشيف المركزي) ============ -->
+      <section class="page" id="page-archive">
+        <div class="stats-grid arc-stats" id="arc-stats"></div>
+
+        <div class="fin-tabs" id="arc-tabs">
+          <button class="fin-tab active" id="arc-tab-docs"><i class="fas fa-file-lines"></i> <span data-i18n="arc.tabDocs">الوثائق</span></button>
+          <button class="fin-tab" id="arc-tab-templates"><i class="fas fa-layer-group"></i> <span data-i18n="arc.tabTemplates">النماذج المؤرشفة</span></button>
+        </div>
+
+        <!-- ===== PANEL: الوثائق ===== -->
+        <div class="fin-panel active" id="arc-panel-docs">
+          <div class="page-toolbar">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="arc-search" placeholder="بحث في الوثائق (رقم، عنوان، وصف، اسم الملف)..." data-i18n-placeholder="arc.search">
+              <button class="search-clear" id="arc-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="toolbar-actions">
+              <select class="form-input" id="arc-filter-type" style="min-width:160px">
+                <option value="" data-i18n="arc.allTypes">جميع الأنواع</option>
+              </select>
+              <select class="form-input" id="arc-filter-status">
+                <option value="" data-i18n="arc.allStatuses">جميع الحالات</option>
+                <option value="active" data-i18n="arc.statusActive">نشط</option>
+                <option value="archived" data-i18n="arc.statusArchived">مؤرشف</option>
+                <option value="draft" data-i18n="arc.statusDraft">مسودة</option>
+              </select>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="arc.colNumber">الرقم</th>
+                    <th data-i18n="arc.colTitle">العنوان</th>
+                    <th data-i18n="arc.colType">النوع</th>
+                    <th data-i18n="arc.colStatus">الحالة</th>
+                    <th data-i18n="arc.colFlags">الأعلام</th>
+                    <th data-i18n="arc.colSize">الحجم</th>
+                    <th data-i18n="arc.colDate">التاريخ</th>
+                    <th data-i18n="arc.colTags">الوسوم</th>
+                    <th data-i18n="common.actions">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="arc-docs-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="arc-docs-empty">
+                <i class="fas fa-box-archive"></i>
+                <p data-i18n="arc.empty">لا توجد وثائق بعد.</p>
+                <p data-i18n="arc.emptyHint">ابدأ بإضافة وثائق إلى الأرشيف عبر توليد PDF من النماذج أو المحاضر.</p>
+              </div>
+            </div>
+            <div class="table-footer" id="arc-docs-footer">
+              <span id="arc-docs-count"></span>
+              <button class="btn btn-ghost" id="arc-docs-more"><i class="fas fa-chevron-down"></i><span data-i18n="arc.loadMore">تحميل المزيد</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== PANEL: النماذج المؤرشفة ===== -->
+        <div class="fin-panel" id="arc-panel-templates">
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="arc.tplName">اسم النموذج</th>
+                    <th data-i18n="arc.tplCategory">الفئة</th>
+                    <th data-i18n="arc.tplLang">اللغة</th>
+                    <th data-i18n="arc.tplDate">التاريخ</th>
+                    <th data-i18n="common.actions">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="arc-tpl-tbody"></tbody>
+              </table>
+              <div class="empty-state hidden" id="arc-tpl-empty">
+                <i class="fas fa-layer-group"></i>
+                <p data-i18n="arc.tplEmpty">لا توجد نماذج مؤرشفة.</p>
+              </div>
+            </div>
+            <div class="table-footer" id="arc-tpl-footer">
+              <span id="arc-tpl-count"></span>
+              <button class="btn btn-ghost" id="arc-tpl-more"><i class="fas fa-chevron-down"></i><span data-i18n="arc.loadMore">تحميل المزيد</span></button>
+            </div>
           </div>
         </div>
       </section>
@@ -663,55 +751,6 @@
             </div>
           </div>
           <div id="reg-settings-body"></div>
-        </div>
-      </section>
-
-      <!-- ============ PAGE: ARCHIVE ============ -->
-      <section class="page" id="page-archive">
-        <div class="page-toolbar">
-          <div class="toolbar-actions">
-            <select class="form-input" id="arch-filter-kind" style="min-width:170px">
-              <option value="" data-i18n="archive.kindAll">كل الأنواع</option>
-              <option value="pv" data-i18n="archive.kindPv">المحاضر</option>
-              <option value="receipt" data-i18n="archive.kindReceipt">الوصولات</option>
-              <option value="document" data-i18n="archive.kindDocument">المستندات</option>
-              <option value="register-archive" data-i18n="archive.kindRegisterArchive">أرشيف السجلات</option>
-              <option value="dossier" data-i18n="archive.kindDossier">الملفات القضائية</option>
-              <option value="procedure" data-i18n="archive.kindProcedure">الإجراءات القضائية</option>
-              <option value="other" data-i18n="archive.kindOther">أخرى</option>
-            </select>
-            <select class="form-input" id="arch-filter-status" style="min-width:150px">
-              <option value="" data-i18n="archive.statusAll">كل الحالات</option>
-              <option value="active" data-i18n="archive.statusActive">نشط</option>
-              <option value="archived" data-i18n="archive.statusArchived">مؤرشف</option>
-              <option value="sealed" data-i18n="archive.statusSealed">مختوم</option>
-            </select>
-            <div class="search-box" style="flex:1;min-width:220px">
-              <i class="fas fa-search"></i>
-              <input type="text" id="arch-search" data-i18n-placeholder="archive.search">
-              <button class="search-clear" id="arch-search-clear" title="مسح" data-i18n-title="common.clear"><i class="fas fa-xmark"></i></button>
-            </div>
-          </div>
-          <div class="toolbar-actions">
-            <button class="btn btn-ghost" id="arch-open-dir"><i class="fas fa-folder-open"></i><span data-i18n="archive.openDir">فتح مجلد الأرشيف</span></button>
-            <div class="toolbar-actions" id="arch-backup-actions" style="margin:0" hidden>
-              <button class="btn btn-ghost" id="arch-backup"><i class="fas fa-file-zipper"></i><span data-i18n="archive.backup">نسخة احتياطية (ZIP)</span></button>
-              <button class="btn btn-ghost" id="arch-restore"><i class="fas fa-rotate-left"></i><span data-i18n="archive.restore">استعادة نسخة</span></button>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-grid" id="arch-cards" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px"></div>
-
-        <div class="card">
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead id="arch-thead"></thead>
-              <tbody id="arch-tbody"></tbody>
-            </table>
-            <div class="empty-state hidden" id="arch-empty"><i class="fas fa-box-archive"></i><p data-i18n="archive.empty">لا وثائق في الأرشيف بعد.</p></div>
-          </div>
-          <div class="table-footer" id="arch-footer"></div>
         </div>
       </section>
 

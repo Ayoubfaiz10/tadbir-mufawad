@@ -12,11 +12,11 @@ const path = require('path');
 const { get, run } = require('../db/database').helpers;
 const audit = require('./audit');
 const documentService = require('./documentService');
-const archiveService = require('./archiveService');
 const pvService = require('./pvService');
+const archiveStorage = require('./archiveStorage');
 
-function ensureArchiveFile(name) {
-  return path.join(archiveService.getArchiveDir(), archiveService.safeFileName(name));
+function ensureOutputFile(name) {
+  return path.join(documentService.getOutputDir(), String(name).replace(/[\\/:*?"<>|]/g, '_').slice(0, 80));
 }
 
 /* ---------- توليد PDF من محتوى محضر مخزّن ---------- */
@@ -28,19 +28,27 @@ async function generatePvPdf(id, lang) {
   return { buf, pv };
 }
 
-function saveCopyDocument(pv, copy, buf) {
+async function saveCopyDocument(pv, copy, buf) {
   const label = pv.language === 'ar' ? copy.label_ar : copy.label_fr;
-  const filePath = ensureArchiveFile(`PV-${pv.pv_number}-${copy.copy_number}-${archiveService.safeFileName(label)}.pdf`);
-  fs.writeFileSync(filePath, buf);
+  const safeLabel = String(label).replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+  const stored = await archiveStorage.storeFile(
+    buf,
+    `PV-${pv.pv_number}-${copy.copy_number}-${safeLabel}.pdf`,
+    { mime: 'application/pdf' }
+  );
 
-  const doc = archiveService.saveDocumentAndLink({
+  const doc = documentService.saveDocument({
     procedureId: pv.procedure_id,
     kind: 'pv',
     title: `${pv.title || pv.pv_number} — ${label}`,
-    filePath,
+    filePath: stored.filePath,
     templateId: pv.template_id,
     templateVersionId: pv.template_version_id
   });
+  run(
+    'UPDATE documents_v2 SET sha256 = ?, size_bytes = ?, storage_name = ?, period_key = ? WHERE id = ?',
+    [stored.sha256, stored.sizeBytes, stored.storageName, stored.period, doc.id]
+  );
   pvService.addDocumentLink(pv.id, doc.id);
   run('UPDATE pv_copies SET document_id = ? WHERE id = ?', [doc.id, copy.id]);
   return doc;
@@ -58,9 +66,7 @@ async function finalizePv(id) {
   const copies = pvService.createCopies(id);
   const { buf } = await generatePvPdf(id, pv.language);
 
-  copies.forEach((copy) => {
-    saveCopyDocument(pv, copy, buf);
-  });
+  await Promise.all(copies.map((copy) => saveCopyDocument(pv, copy, buf)));
 
   audit.log({
     action: 'pv.finalized',

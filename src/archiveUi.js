@@ -1,245 +1,466 @@
 /* ================================================================
-   وحدة الأرشيف — ArchiveModule
-   صفحة "الأرشيف": كل وثائق التطبيق (محاضر، وصولات، مستندات، أرشيف سجلات)
-   بنية منظمة + بصمات SHA-256 + حالات (نشط/مؤرشف/مختوم) + فتح/تحميل/حذف.
+   ArchiveModule — واجهة الأرشيف المركزي لإدارة الوثائق
+   Tab 1: Documents (documents_v2)
+   Tab 2: Archived Templates (document_templates.archived=1)
    ================================================================ */
 
 'use strict';
 
 (function () {
-  const {
-    API, state, t, toast, escapeHtml, fmtDate, badge,
-    modal, openModal, closeModal, field, goTo
-  } = window.HuissierApp;
+  const H = window.HuissierApp;
+  if (!H) return;
+  const { API, state, t, toast, escapeHtml: esc, fmtDate, modal, openModal, closeModal } = H;
 
-  const byId = (id) => document.getElementById(id);
-  const esc = escapeHtml;
-  const l = (ar, fr) => (state.lang === 'ar' ? ar : fr);
+  const LS = { page: 1, pageSize: 25, filters: {}, query: '', activeTab: 'docs' };
+  let stats = {};
+  let docTypes = [];
 
-  const BK_ERRORS = {
-    'BACKUP:INVALID_NO_SQLITE': ['النسخة الاحتياطية لا تحتوي على قاعدة بيانات', 'La sauvegarde ne contient pas de base de données'],
-    'BACKUP:INVALID_APP': ['هذه النسخة ليست من هذا التطبيق', 'Cette sauvegarde ne provient pas de cette application'],
-    'BACKUP:INVALID_FORMAT': ['صيغة النسخة غير مدعومة', 'Format de sauvegarde non pris en charge'],
-    'BACKUP:NOT_FOUND': ['ملف النسخة غير موجود', 'Fichier de sauvegarde introuvable'],
-    'BACKUP:NO_DB': ['قاعدة البيانات غير متاحة', 'Base de données indisponible'],
-    'ARCHIVE:NOT_INITIALIZED': ['مجلد الأرشيف غير مهيأ — حدده من الإعدادات', "Le dossier d'archives n'est pas configuré dans les réglages"],
-    'ARCHIVE:OPEN_FAILED': ['تعذّر فتح مجلد الأرشيف في المستكشف', "Impossible d'ouvrir le dossier d'archives dans l'explorateur"],
-    'DOC:SEALED:NO_DELETE': ['وثيقة مختومة — لا يمكن حذفها', 'Document scellé — suppression impossible']
-  };
-  function errTxt(e) {
-    const msg = e && e.message ? e.message : String(e || '');
-    const p = BK_ERRORS[msg];
-    if (p) return l(p[0], p[1]);
-    if (msg.indexOf('AUTH:UNAUTHORIZED:') === 0) return l('ليست لديك الصلاحية لهذا الإجراء', 'Action non autorisée');
-    return msg;
+  /* ---------- Helpers ---------- */
+  function fileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
   }
 
-  let bound = false;
-  let isAdmin = false;
-  let isBackupAdmin = false;
-  let rows = [];
-  let limit = 50;
-
-  const filters = { kind: '', status: '', q: '' };
-
-  const KIND_LABELS = {
-    pv: ['محضر', 'PV'], receipt: ['وصل', 'Reçu'], document: ['مستند', 'Document'],
-    'register-archive': ['أرشيف سجل', 'Archive registre'],
-    dossier: ['ملف قضائي', 'Dossier'], procedure: ['إجراء قضائي', 'Procédure'],
-    other: ['أخرى', 'Autre']
-  };
-  const KIND_COLORS = { pv: 'info', receipt: 'success', document: 'primary', 'register-archive': 'warning', dossier: 'danger', procedure: 'primary', other: 'gray' };
-  const STATUS_LABELS = { active: ['نشط', 'Actif'], archived: ['مؤرشف', 'Archivé'], sealed: ['مختوم', 'Scellé'] };
-  const STATUS_COLORS = { active: 'success', archived: 'info', sealed: 'danger' };
-
-  function isReference(d) {
-    return d.kind === 'dossier' || d.kind === 'procedure';
-  }
-
-  /* ---------- أدوات ---------- */
-  function kindBadge(kind) {
-    const k = KIND_LABELS[kind] ? kind : 'other';
-    return `<span class="badge st-${KIND_COLORS[k]}">${esc(l(KIND_LABELS[k][0], KIND_LABELS[k][1]))}</span>`;
+  function mimeIcon(mime) {
+    if (!mime) return 'fa-file';
+    if (mime.includes('pdf')) return 'fa-file-pdf';
+    if (mime.includes('image')) return 'fa-file-image';
+    if (mime.includes('word') || mime.includes('document')) return 'fa-file-word';
+    if (mime.includes('sheet') || mime.includes('excel')) return 'fa-file-excel';
+    if (mime.includes('text')) return 'fa-file-lines';
+    return 'fa-file';
   }
 
   function statusBadge(status) {
-    const pair = STATUS_LABELS[status];
-    return pair ? `<span class="badge st-${STATUS_COLORS[status]}">${esc(l(pair[0], pair[1]))}</span>` : esc(status || '—');
+    const colors = {
+      active: 'success', archived: 'info', draft: 'warning',
+      deleted: 'danger', locked: 'primary'
+    };
+    return `<span class="badge ${colors[status] || 'gray'}">${esc(status)}</span>`;
   }
 
-  function fmtBytes(n) {
-    const v = Number(n || 0);
-    if (v < 1024) return v + ' B';
-    if (v < 1024 * 1024) return (v / 1024).toFixed(1) + ' KB';
-    return (v / (1024 * 1024)).toFixed(2) + ' MB';
+  function typeIconHTML(typeInfo) {
+    const icon = typeInfo && typeInfo.icon ? typeInfo.icon : 'fa-file';
+    return `<i class="fas ${esc(icon)}" style="opacity:.7"></i>`;
   }
 
-  function refOf(d) {
-    if (d.procedure_number) return `<strong>${esc(d.procedure_number)}</strong>`;
-    if (d.entity_type === 'template') return esc('#' + d.entity_id);
-    return esc(`${d.entity_type || ''}#${d.entity_id || 0}`);
+  function renderTabs() {
+    const docsTab = document.getElementById('arc-tab-docs');
+    const tplTab = document.getElementById('arc-tab-templates');
+    const docsPanel = document.getElementById('arc-panel-docs');
+    const tplPanel = document.getElementById('arc-panel-templates');
+
+    if (docsTab) docsTab.classList.toggle('active', LS.activeTab === 'docs');
+    if (tplTab) tplTab.classList.toggle('active', LS.activeTab === 'templates');
+    if (docsPanel) docsPanel.classList.toggle('active', LS.activeTab === 'docs');
+    if (tplPanel) tplPanel.classList.toggle('active', LS.activeTab === 'templates');
   }
 
-  /* ---------- البطاقات ---------- */
-  function renderCards(s) {
-    const cards = [
-      { icon: 'fa-file', accent: 'info', v: s.total, k: l('العناصر', 'Éléments') },
-      { icon: 'fa-database', accent: 'primary', v: fmtBytes(s.bytes), k: l('الحجم الإجمالي', 'Taille totale') },
-      { icon: 'fa-lock', accent: 'danger', v: s.sealed, k: l('مختومة', 'Scellées') }
-    ];
-    const top = (s.byKind || []).slice(0, 5);
-    top.forEach((k) => {
-      const pair = KIND_LABELS[k.kind];
-      if (pair) cards.push({ icon: k.kind === 'dossier' ? 'fa-folder' : k.kind === 'procedure' ? 'fa-scale-balanced' : 'fa-box', accent: KIND_COLORS[k.kind] || 'warning', v: k.c, k: l(pair[0], pair[1]) });
+  /* ---------- Render Stats ---------- */
+  function renderStats() {
+    const el = document.getElementById('arc-stats');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="stat-card" data-accent="primary">
+        <div class="stat-icon"><i class="fas fa-box-archive"></i></div>
+        <div class="stat-info"><span class="stat-value">${stats.total || 0}</span><span class="stat-label">${t('arc.stats.total')}</span></div>
+      </div>
+      <div class="stat-card" data-accent="success">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info"><span class="stat-value">${stats.active || 0}</span><span class="stat-label">${t('arc.stats.active')}</span></div>
+      </div>
+      <div class="stat-card" data-accent="info">
+        <div class="stat-icon"><i class="fas fa-box-archive"></i></div>
+        <div class="stat-info"><span class="stat-value">${stats.archived || 0}</span><span class="stat-label">${t('arc.stats.archived')}</span></div>
+      </div>
+      <div class="stat-card" data-accent="warning">
+        <div class="stat-icon"><i class="fas fa-lock"></i></div>
+        <div class="stat-info"><span class="stat-value">${stats.locked || 0}</span><span class="stat-label">${t('arc.stats.locked')}</span></div>
+      </div>
+      <div class="stat-card" data-accent="danger">
+        <div class="stat-icon"><i class="fas fa-trash"></i></div>
+        <div class="stat-info"><span class="stat-value">${stats.deleted || 0}</span><span class="stat-label">${t('arc.stats.deleted')}</span></div>
+      </div>
+      <div class="stat-card" data-accent="primary">
+        <div class="stat-icon"><i class="fas fa-hard-drive"></i></div>
+        <div class="stat-info"><span class="stat-value">${fileSize(stats.totalSize || 0)}</span><span class="stat-label">${t('arc.stats.totalSize')}</span></div>
+      </div>
+    `;
+  }
+
+  /* ---------- Render Documents Table ---------- */
+  function renderDocsTable() {
+    const tbody = document.getElementById('arc-docs-tbody');
+    const empty = document.getElementById('arc-docs-empty');
+    const countEl = document.getElementById('arc-docs-count');
+    const moreBtn = document.getElementById('arc-docs-more');
+    if (!tbody) return;
+
+    const q = LS.query;
+    const filters = { ...LS.filters, q, page: LS.page, pageSize: LS.pageSize };
+
+    API.arcSearch(filters).then((result) => {
+      const rows = result.rows || [];
+      const total = result.total || 0;
+
+      tbody.innerHTML = rows.map((d) => {
+        const typeInfo = d.type_info || {};
+        const tagsHtml = (d.tags || []).map((tg) =>
+          `<span class="arc-tag" style="background:${esc(tg.color)}">${esc(tg.name)}</span>`
+        ).join(' ');
+
+        return `<tr class="${d.locked ? 'row-locked' : ''} ${d.deleted_at ? 'row-deleted' : ''}">
+          <td>${typeIconHTML(typeInfo)} ${esc(d.doc_number || '')}</td>
+          <td title="${esc(d.description || '')}"><strong>${esc(d.title || '—')}</strong></td>
+          <td>${esc(typeInfo.name_ar || typeInfo.name_fr || d.type_code || '—')}</td>
+          <td>${statusBadge(d.status)}</td>
+          <td>${d.locked ? '<i class="fas fa-lock" style="color:var(--primary)"></i>' : ''} ${d.deleted_at ? '<i class="fas fa-trash" style="color:var(--danger)"></i>' : ''}</td>
+          <td>${fileSize(d.size_bytes)}</td>
+          <td>${fmtDate(d.created_at)}</td>
+          <td>${tagsHtml}</td>
+          <td><div class="row-actions">
+            <button class="row-btn" data-arc-view="${d.id}" title="${t('arc.view')}"><i class="fas fa-eye"></i></button>
+            <button class="row-btn" data-arc-edit="${d.id}" title="${t('common.edit')}"><i class="fas fa-pen"></i></button>
+            ${d.file_path ? `<button class="row-btn" data-arc-open="${d.id}" title="${t('arc.open')}"><i class="fas fa-external-link"></i></button>` : ''}
+            ${d.file_path ? `<button class="row-btn" data-arc-dl="${d.id}" title="${t('arc.download')}"><i class="fas fa-download"></i></button>` : ''}
+            ${!d.locked && !d.deleted_at ? `<button class="row-btn del" data-arc-del="${d.id}" title="${t('common.delete')}"><i class="fas fa-trash"></i></button>` : ''}
+            ${d.deleted_at ? `<button class="row-btn" data-arc-restore="${d.id}" title="${t('arc.restore')}"><i class="fas fa-undo"></i></button>` : ''}
+          </div></td>
+        </tr>`;
+      }).join('');
+
+      empty.style.display = rows.length ? 'none' : 'flex';
+      countEl.textContent = `${total} ${t('arc.results')}`;
+      moreBtn.style.display = (LS.page * LS.pageSize < total) ? '' : 'none';
+      bindDocRowActions();
+    }).catch((e) => toast(String(e.message || e), true));
+  }
+
+  /* ---------- Render Archived Templates Table ---------- */
+  let tplPage = 1;
+  function renderTemplatesTable() {
+    const tbody = document.getElementById('arc-tpl-tbody');
+    const empty = document.getElementById('arc-tpl-empty');
+    const countEl = document.getElementById('arc-tpl-count');
+    const moreBtn = document.getElementById('arc-tpl-more');
+    if (!tbody) return;
+
+    API.arcArchivedTemplates({ page: tplPage, pageSize: LS.pageSize }).then((result) => {
+      const rows = result.rows || [];
+      const total = result.total || 0;
+
+      tbody.innerHTML = rows.map((tpl) => {
+        const langLabel = tpl.language === 'fr' ? 'FR' : 'AR';
+        return `<tr>
+          <td><strong>${esc(tpl.name || '—')}</strong></td>
+          <td>${esc(tpl.category_name_ar || tpl.category_name_fr || '—')}</td>
+          <td><span class="badge">${langLabel}</span></td>
+          <td>${fmtDate(tpl.updated_at || tpl.created_at)}</td>
+          <td><div class="row-actions">
+            <button class="row-btn" data-arc-tpl-view="${tpl.id}" title="${t('arc.view')}"><i class="fas fa-eye"></i></button>
+            <button class="row-btn" data-arc-tpl-restore="${tpl.id}" title="${t('arc.restore')}"><i class="fas fa-undo"></i></button>
+          </div></td>
+        </tr>`;
+      }).join('');
+
+      empty.style.display = rows.length ? 'none' : 'flex';
+      countEl.textContent = `${total} ${t('arc.results')}`;
+      moreBtn.style.display = (tplPage * LS.pageSize < total) ? '' : 'none';
+      bindTplRowActions();
+    }).catch((e) => toast(String(e.message || e), true));
+  }
+
+  /* ---------- Bind Document Row Actions ---------- */
+  function bindDocRowActions() {
+    document.querySelectorAll('[data-arc-view]').forEach((b) => {
+      b.addEventListener('click', () => openDocDetail(Number(b.getAttribute('data-arc-view'))));
     });
-    byId('arch-cards').innerHTML = cards.map((c) => `
-      <div class="stat-card" data-accent="${c.accent}">
-        <div class="stat-icon"><i class="fas ${c.icon}"></i></div>
-        <div class="stat-info"><span class="stat-value">${esc(c.v)}</span><span class="stat-label">${esc(c.k)}</span></div>
-      </div>`).join('');
-  }
-
-  /* ---------- القائمة ---------- */
-  function renderTable() {
-    byId('arch-thead').innerHTML = `<tr>${[
-      l('النوع', 'Type'), l('العنوان', 'Titre'), l('المرجع', 'Réf.'), l('التاريخ', 'Date'),
-      l('الحجم', 'Taille'), l('الحالة', 'Statut'), l('المستخدم', 'Utilisateur'), l('البصمة', 'SHA-256'), ''
-    ].map((h) => `<th>${h}</th>`).join('')}</tr>`;
-
-    byId('arch-empty').classList.toggle('hidden', rows.length > 0);
-    byId('arch-tbody').innerHTML = rows.map((d) => {
-      const ref = isReference(d);
-      return `<tr>
-        <td>${kindBadge(d.kind)}</td>
-        <td><strong>${esc(d.title)}</strong></td>
-        <td>${refOf(d)}</td>
-        <td nowrap>${esc(fmtDate(d.created_at))}</td>
-        <td nowrap>${ref ? '—' : esc(fmtBytes(d.size_bytes))}</td>
-        <td>${statusBadge(d.status)}</td>
-        <td>${esc(d.created_by || '—')}</td>
-        <td>${ref ? '—' : `<span class="muted-cell" title="${esc(d.sha256 || '')}">${esc(String(d.sha256 || '').slice(0, 10) + '…')}</span>`}</td>
-        <td><div class="row-actions">
-          ${ref
-            ? `<button class="row-btn" data-arch-nav="${d.entity_type}:${d.entity_id}" title="${l('فتح', 'Ouvrir')}"><i class="fas fa-arrow-up-right-from-square"></i></button>`
-            : `<button class="row-btn" data-arch-open="${d.id}" title="${l('فتح', 'Ouvrir')}"><i class="fas fa-eye"></i></button>
-               <button class="row-btn" data-arch-dl="${d.id}" title="${l('تحميل', 'Télécharger')}"><i class="fas fa-download"></i></button>`}
-          ${d.status !== 'sealed' && isAdmin ? `<button class="row-btn del" data-arch-del="${d.id}" title="${l('حذف', 'Supprimer')}"><i class="fas fa-trash"></i></button>` : ''}
-        </div></td>
-      </tr>`;
-    }).join('');
-
-    const more = rows.length >= limit;
-    byId('arch-footer').innerHTML = `
-      <span class="page-ind">${rows.length} ${l('عنصر', 'éléments')}</span>
-      ${more ? `<button class="btn btn-ghost btn-sm" id="arch-more"><i class="fas fa-angles-down"></i> ${l('تحميل المزيد', 'Charger plus')}</button>` : ''}`;
-    const moreBtn = byId('arch-more');
-    if (moreBtn) moreBtn.addEventListener('click', loadMore);
-  }
-
-  /* ---------- الجلب ---------- */
-  async function loadList() {
-    try {
-      const res = await API.archiveList({
-        kind: filters.kind, status: filters.status, q: filters.q, limit
+    document.querySelectorAll('[data-arc-edit]').forEach((b) => {
+      b.addEventListener('click', () => openEditModal(Number(b.getAttribute('data-arc-edit'))));
+    });
+    document.querySelectorAll('[data-arc-open]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        try { await API.arcOpenDoc(Number(b.getAttribute('data-arc-open'))); } catch (e) { toast(String(e), true); }
       });
-      rows = res || [];
-      renderTable();
-    } catch (e) { toast(errTxt(e), true); }
+    });
+    document.querySelectorAll('[data-arc-dl]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        try { await API.docDownload(Number(b.getAttribute('data-arc-dl'))); } catch (e) { toast(String(e), true); }
+      });
+    });
+    document.querySelectorAll('[data-arc-del]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = Number(b.getAttribute('data-arc-del'));
+        if (!confirm(t('arc.deleteConfirm'))) return;
+        try { await API.arcDelete(id); toast(t('common.delete')); renderDocsTable(); renderStats(); } catch (e) { toast(String(e), true); }
+      });
+    });
+    document.querySelectorAll('[data-arc-restore]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        try { await API.arcRestore(Number(b.getAttribute('data-arc-restore'))); toast(t('arc.restored')); renderDocsTable(); renderStats(); } catch (e) { toast(String(e), true); }
+      });
+    });
   }
 
-  async function loadMore() {
-    limit += 50;
-    await loadList();
+  /* ---------- Bind Template Row Actions ---------- */
+  function bindTplRowActions() {
+    document.querySelectorAll('[data-arc-tpl-view]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = Number(b.getAttribute('data-arc-tpl-view'));
+        toast(t('arc.switchToTemplates'));
+        if (window.TemplatesModule) { H.goTo('documents'); window.TemplatesModule.render(); }
+      });
+    });
+    document.querySelectorAll('[data-arc-tpl-restore]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = Number(b.getAttribute('data-arc-tpl-restore'));
+        if (!confirm(t('arc.restoreTemplateConfirm'))) return;
+        try {
+          await API.tplSetArchived(id, false);
+          toast(t('arc.restored'));
+          renderTemplatesTable();
+        } catch (e) { toast(String(e), true); }
+      });
+    });
   }
 
-  async function loadStats() {
+  /* ---------- Document Detail Modal ---------- */
+  async function openDocDetail(id) {
+    const doc = await API.arcGet(id);
+    if (!doc) return;
+    const versions = await API.arcVersions(id);
+    const auditLog = await API.arcAuditLog(id);
+    const relations = await API.arcRelations(id);
+    const typeInfo = doc.type_info || {};
+
+    modal.title.textContent = t('arc.detailTitle');
+    modal.body.innerHTML = `
+      <div class="arc-detail">
+        <div class="arc-detail-header">
+          <div class="arc-detail-icon">${typeIconHTML(typeInfo)}</div>
+          <div class="arc-detail-meta">
+            <h2>${esc(doc.title || doc.doc_number)}</h2>
+            <p class="hint">${esc(doc.doc_number)} — ${esc(typeInfo.name_ar || typeInfo.name_fr || '—')}</p>
+            <div class="arc-detail-badges">
+              ${statusBadge(doc.status)}
+              ${doc.locked ? '<span class="badge primary"><i class="fas fa-lock"></i> ' + t('arc.locked') + '</span>' : ''}
+              ${doc.deleted_at ? '<span class="badge danger"><i class="fas fa-trash"></i> ' + t('arc.softDeleted') + '</span>' : ''}
+              <span class="badge gray">${esc(doc.language || 'ar')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="arc-detail-grid">
+          <div><strong>${t('arc.file')}</strong> ${esc(doc.original_name || doc.file_name || '—')}</div>
+          <div><strong>${t('arc.size')}</strong> ${fileSize(doc.size_bytes)}</div>
+          <div><strong>${t('arc.mime')}</strong> ${esc(doc.mime || '—')}</div>
+          <div><strong>${t('arc.version')}</strong> v${doc.version || 1}</div>
+          <div><strong>${t('arc.period')}</strong> ${esc(doc.period_key || '—')}</div>
+          <div><strong>${t('arc.source')}</strong> ${esc(doc.source || '—')}</div>
+          <div style="grid-column:1/-1"><strong>${t('arc.sha256')}</strong> <code class="arc-hash">${esc(doc.sha256 || '—')}</code></div>
+          ${doc.description ? `<div style="grid-column:1/-1"><strong>${t('arc.description')}</strong> ${esc(doc.description)}</div>` : ''}
+          ${doc.entity_type ? `<div><strong>${t('arc.entity')}</strong> ${esc(doc.entity_type)} #${doc.entity_id}</div>` : ''}
+        </div>
+
+        ${doc.tags && doc.tags.length ? `
+          <div class="arc-tags-section">
+            <strong>${t('arc.tags')}</strong>
+            <div class="arc-tags">${doc.tags.map((tg) =>
+              `<span class="arc-tag" style="background:${esc(tg.color)}">${esc(tg.name)}
+                <button class="arc-tag-remove" data-arc-rmtag="${doc.id}" data-tag-id="${tg.id}">×</button>
+              </span>`
+            ).join(' ')}</div>
+          </div>
+        ` : ''}
+
+        ${versions.length ? `
+          <div class="arc-section">
+            <h4>${t('arc.versions')} (${versions.length})</h4>
+            <table class="data-table compact">
+              <thead><tr><th>${t('arc.versionNo')}</th><th>${t('arc.versionNote')}</th><th>${t('arc.versionBy')}</th><th>${t('arc.versionDate')}</th></tr></thead>
+              <tbody>${versions.map((v) => `<tr><td>v${v.version}</td><td>${esc(v.note || '—')}</td><td>${esc(v.created_by)}</td><td>${fmtDate(v.created_at)}</td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${relations.length ? `
+          <div class="arc-section">
+            <h4>${t('arc.relations')} (${relations.length})</h4>
+            <table class="data-table compact">
+              <thead><tr><th>${t('arc.relDocNo')}</th><th>${t('arc.relTitle')}</th><th>${t('arc.relType')}</th></tr></thead>
+              <tbody>${relations.map((r) => `<tr><td>${esc(r.doc_number || '')}</td><td>${esc(r.title || '')}</td><td>${esc(r.relation_type)}</td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        ${auditLog.length ? `
+          <div class="arc-section">
+            <h4>${t('arc.auditLog')} (${auditLog.length})</h4>
+            <table class="data-table compact">
+              <thead><tr><th>${t('arc.auditAction')}</th><th>${t('arc.auditBy')}</th><th>${t('arc.auditDate')}</th></tr></thead>
+              <tbody>${auditLog.slice(0, 20).map((a) => `<tr><td>${esc(a.action)}</td><td>${esc(a.by_user)}</td><td>${fmtDate(a.created_at)}</td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    modal.footer.innerHTML = `
+      <button class="btn btn-ghost" data-modal-cancel>${t('common.close')}</button>
+      ${doc.file_path ? `<button class="btn btn-ghost" id="arc-detail-open"><i class="fas fa-external-link"></i> ${t('arc.open')}</button>` : ''}
+      ${doc.file_path ? `<button class="btn btn-ghost" id="arc-detail-dl"><i class="fas fa-download"></i> ${t('arc.download')}</button>` : ''}
+      ${doc.file_path && doc.sha256 ? `<button class="btn btn-ghost" id="arc-detail-verify"><i class="fas fa-shield-halved"></i> ${t('arc.verifyIntegrity')}</button>` : ''}
+      ${!doc.locked && !doc.deleted_at ? `
+        <button class="btn btn-ghost" id="arc-detail-lock"><i class="fas fa-lock"></i> ${t('arc.lock')}</button>
+        <button class="btn btn-primary" id="arc-detail-edit"><i class="fas fa-pen"></i> ${t('common.edit')}</button>
+      ` : ''}
+      ${doc.locked ? `<button class="btn btn-ghost" id="arc-detail-unlock"><i class="fas fa-unlock"></i> ${t('arc.unlock')}</button>` : ''}
+    `;
+    openModal();
+
+    modal.footer.querySelector('[data-modal-cancel]').addEventListener('click', closeModal);
+    const editBtn = modal.footer.querySelector('#arc-detail-edit');
+    if (editBtn) editBtn.addEventListener('click', () => { closeModal(); openEditModal(id); });
+    const openBtn = modal.footer.querySelector('#arc-detail-open');
+    if (openBtn) openBtn.addEventListener('click', async () => { try { await API.arcOpenDoc(id); } catch (e) { toast(String(e), true); } });
+    const dlBtn = modal.footer.querySelector('#arc-detail-dl');
+    if (dlBtn) dlBtn.addEventListener('click', async () => { try { await API.docDownload(id); } catch (e) { toast(String(e), true); } });
+    const lockBtn = modal.footer.querySelector('#arc-detail-lock');
+    if (lockBtn) lockBtn.addEventListener('click', async () => { await API.arcLock(id); closeModal(); toast(t('arc.locked')); renderDocsTable(); renderStats(); });
+    const unlockBtn = modal.footer.querySelector('#arc-detail-unlock');
+    if (unlockBtn) unlockBtn.addEventListener('click', async () => { await API.arcUnlock(id); closeModal(); toast(t('arc.unlocked')); renderDocsTable(); renderStats(); });
+    const verifyBtn = modal.footer.querySelector('#arc-detail-verify');
+    if (verifyBtn) verifyBtn.addEventListener('click', async () => {
+      try {
+        const result = await API.arcVerifyIntegrity(id);
+        if (result.verified) toast(t('arc.integrityOk'));
+        else toast(t('arc.integrityFail'), true);
+      } catch (e) { toast(String(e), true); }
+    });
+
+    document.querySelectorAll('[data-arc-rmtag]').forEach((b) => {
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const docId = Number(b.getAttribute('data-arc-rmtag'));
+        const tagId = Number(b.getAttribute('data-tag-id'));
+        await API.arcTagRemove(docId, tagId);
+        openDocDetail(docId);
+      });
+    });
+  }
+
+  /* ---------- Edit Modal ---------- */
+  async function openEditModal(id) {
+    const doc = await API.arcGet(id);
+    if (!doc) return;
+    if (!docTypes.length) docTypes = await API.arcDocTypes();
+
+    modal.title.textContent = t('arc.editTitle');
+    modal.body.innerHTML = `
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-field"><label>${t('arc.titleLabel')}</label>
+          <input class="form-input" id="arc-f-title" type="text" value="${esc(doc.title || '')}"></div>
+        <div class="form-field"><label>${t('arc.descLabel')}</label>
+          <textarea class="form-input" id="arc-f-desc" rows="2">${esc(doc.description || '')}</textarea></div>
+        <div class="form-field"><label>${t('arc.typeLabel')}</label>
+          <select class="form-input" id="arc-f-type">
+            <option value="">—</option>
+            ${docTypes.map((dt) => `<option value="${dt.id}" ${dt.id === doc.document_type_id ? 'selected' : ''}>${esc(dt.name_ar || dt.name_fr)}</option>`).join('')}
+          </select></div>
+        <div class="form-field"><label>${t('arc.statusLabel')}</label>
+          <select class="form-input" id="arc-f-status">
+            <option value="active" ${doc.status === 'active' ? 'selected' : ''}>${t('arc.statusActive')}</option>
+            <option value="archived" ${doc.status === 'archived' ? 'selected' : ''}>${t('arc.statusArchived')}</option>
+            <option value="draft" ${doc.status === 'draft' ? 'selected' : ''}>${t('arc.statusDraft')}</option>
+          </select></div>
+        <div class="form-field"><label>${t('arc.langLabel')}</label>
+          <select class="form-input" id="arc-f-lang">
+            <option value="ar" ${doc.language === 'ar' ? 'selected' : ''}>العربية</option>
+            <option value="fr" ${doc.language === 'fr' ? 'selected' : ''}>Français</option>
+          </select></div>
+      </div>
+    `;
+    modal.footer.innerHTML = `
+      <button class="btn btn-ghost" data-modal-cancel>${t('common.cancel')}</button>
+      <button class="btn btn-primary" id="arc-edit-ok">${t('common.save')}</button>
+    `;
+    openModal();
+
+    modal.footer.querySelector('[data-modal-cancel]').addEventListener('click', closeModal);
+    modal.footer.querySelector('#arc-edit-ok').addEventListener('click', async () => {
+      const typeVal = document.getElementById('arc-f-type').value;
+      await API.arcUpdate(id, {
+        title: document.getElementById('arc-f-title').value.trim(),
+        description: document.getElementById('arc-f-desc').value.trim(),
+        document_type_id: typeVal ? Number(typeVal) : null,
+        status: document.getElementById('arc-f-status').value,
+        language: document.getElementById('arc-f-lang').value
+      });
+      closeModal();
+      toast(t('common.save'));
+      renderDocsTable();
+    });
+  }
+
+  /* ---------- Filter Handling ---------- */
+  function applyFilters() {
+    LS.page = 1;
+    LS.query = (document.getElementById('arc-search') || {}).value || '';
+    LS.filters = {};
+    const typeFilter = document.getElementById('arc-filter-type');
+    const statusFilter = document.getElementById('arc-filter-status');
+    if (typeFilter && typeFilter.value) LS.filters.document_type_id = Number(typeFilter.value);
+    if (statusFilter && statusFilter.value) LS.filters.status = statusFilter.value;
+    renderDocsTable();
+  }
+
+  /* ---------- Load Filters ---------- */
+  async function loadFilters() {
     try {
-      const s = await API.archiveStats();
-      renderCards(s || {});
-    } catch (e) { toast(errTxt(e), true); }
-  }
-
-  /* ---------- الأحداث ---------- */
-  function bindEvents() {
-    if (bound) return;
-    bound = true;
-
-    byId('arch-filter-kind').addEventListener('change', (e) => { filters.kind = e.target.value; limit = 50; loadList(); });
-    byId('arch-filter-status').addEventListener('change', (e) => { filters.status = e.target.value; limit = 50; loadList(); });
-    byId('arch-search').addEventListener('input', debounce((e) => { filters.q = e.target.value.trim(); limit = 50; loadList(); }, 350));
-    byId('arch-search-clear').addEventListener('click', () => {
-      byId('arch-search').value = ''; filters.q = ''; limit = 50; loadList();
-    });
-    byId('arch-open-dir').addEventListener('click', async () => {
-      try { await API.archiveOpenDir(); } catch (e) { toast(errTxt(e), true); }
-    });
-
-    byId('arch-backup').addEventListener('click', async () => {
-      try {
-        const r = await API.archiveBackup();
-        if (r && r.canceled) return;
-        if (r && r.ok) toast(l('أُنشئت النسخة الاحتياطية: ' + r.path + ' (' + fmtBytes(r.bytes) + ')', 'Sauvegarde créée : ' + r.path + ' (' + fmtBytes(r.bytes) + ')'));
-      } catch (e) { toast(errTxt(e), true); }
-    });
-
-    byId('arch-restore').addEventListener('click', async () => {
-      if (!confirm(l('استعادة نسخة احتياطية ستحل محل قاعدة البيانات والأرشيف الحاليين نهائياً. متابعة؟', 'Restaurer remplacera définitivement la base de données et les archives actuelles. Continuer ?'))) return;
-      if (!confirm(l('تأكيد نهائي؟ سيُعاد تشغيل التطبيق تلقائياً بعد الاستعادة.', 'Confirmation finale ? L\'application redémarrera automatiquement.'))) return;
-      try {
-        const r = await API.archiveRestore();
-        if (r && r.canceled) return;
-        toast(l('تمت الاستعادة (' + r.docs + ' وثيقة) — إعادة تشغيل...', 'Restauration effectuée (' + r.docs + ' documents) — redémarrage...'));
-      } catch (e) { toast(errTxt(e), true); }
-    });
-
-    byId('arch-tbody').addEventListener('click', async (e) => {
-      const navBtn = e.target.closest('[data-arch-nav]');
-      const openBtn = e.target.closest('[data-arch-open]');
-      const dlBtn = e.target.closest('[data-arch-dl]');
-      const delBtn = e.target.closest('[data-arch-del]');
-      if (navBtn) {
-        const [type, id] = navBtn.getAttribute('data-arch-nav').split(':');
-        if (type === 'procedure') { goTo('procedures'); setTimeout(() => { if (window.ProceduresModule && window.ProceduresModule.openDetail) window.ProceduresModule.openDetail(Number(id)); }, 100); }
-        else if (type === 'dossier') { goTo('dossiers'); }
-      } else if (openBtn) {
-        try { await API.docOpen(Number(openBtn.getAttribute('data-arch-open'))); } catch (err) { toast(errTxt(err), true); }
-      } else if (dlBtn) {
-        try {
-          const r = await API.docDownload(Number(dlBtn.getAttribute('data-arch-dl')));
-          if (r && r.ok) toast(l('تم التحميل', 'Téléchargé'));
-        } catch (err) { toast(errTxt(err), true); }
-      } else if (delBtn) {
-        const id = Number(delBtn.getAttribute('data-arch-del'));
-        if (!confirm(l('حذف هذه الوثيقة من الأرشيف نهائياً؟', 'Supprimer définitivement ce document ?'))) return;
-        try {
-          await API.docDelete(id);
-          toast(l('تم الحذف', 'Supprimé'));
-          loadList(); loadStats();
-        } catch (err) { toast(errTxt(err), true); }
+      docTypes = await API.arcDocTypes();
+      const typeSel = document.getElementById('arc-filter-type');
+      if (typeSel) {
+        typeSel.innerHTML = '<option value="">' + t('arc.allTypes') + '</option>' +
+          docTypes.map((dt) => `<option value="${dt.id}">${esc(dt.name_ar || dt.name_fr)} (${dt.doc_count || 0})</option>`).join('');
       }
-    });
+    } catch (e) {}
   }
 
-  function debounce(fn, ms) {
-    let timer = null;
-    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
-  }
-
-  /* ---------- API الوحدة ---------- */
-  function render() {
-    bindEvents();
-    loadStats();
-    loadList();
-  }
-
+  /* ---------- Init ---------- */
   async function init() {
-    try { isAdmin = await API.authIsAuthorized('document.delete'); } catch (e) { isAdmin = false; }
-    try {
-      isBackupAdmin = await API.authIsAuthorized('backup.manage');
-      byId('arch-backup-actions').hidden = !isBackupAdmin;
-    } catch (e) { byId('arch-backup-actions').hidden = true; }
-    render();
+    const searchEl = document.getElementById('arc-search');
+    const searchClear = document.getElementById('arc-search-clear');
+    const typeFilter = document.getElementById('arc-filter-type');
+    const statusFilter = document.getElementById('arc-filter-status');
+    const moreDocsBtn = document.getElementById('arc-docs-more');
+    const moreTplBtn = document.getElementById('arc-tpl-more');
+    const tabDocs = document.getElementById('arc-tab-docs');
+    const tabTpl = document.getElementById('arc-tab-templates');
+
+    if (searchEl) searchEl.addEventListener('input', () => applyFilters());
+    if (searchClear) searchClear.addEventListener('click', () => { searchEl.value = ''; applyFilters(); });
+    if (typeFilter) typeFilter.addEventListener('change', () => applyFilters());
+    if (statusFilter) statusFilter.addEventListener('change', () => applyFilters());
+    if (moreDocsBtn) moreDocsBtn.addEventListener('click', () => { LS.page++; renderDocsTable(); });
+    if (moreTplBtn) moreTplBtn.addEventListener('click', () => { tplPage++; renderTemplatesTable(); });
+    if (tabDocs) tabDocs.addEventListener('click', () => { LS.activeTab = 'docs'; renderTabs(); });
+    if (tabTpl) tabTpl.addEventListener('click', () => { LS.activeTab = 'templates'; renderTabs(); renderTemplatesTable(); });
+
+    await loadFilters();
   }
 
+  /* ---------- Render ---------- */
+  async function render() {
+    try {
+      stats = await API.arcStats();
+      renderStats();
+    } catch (e) {}
+    renderTabs();
+    if (LS.activeTab === 'docs') renderDocsTable();
+    else renderTemplatesTable();
+  }
+
+  /* ---------- Expose ---------- */
   window.ArchiveModule = { init, render };
 })();

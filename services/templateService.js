@@ -29,8 +29,13 @@ function versionBump(current, major = false) {
 
 /* ---------- قائمة مع فلاتر وبحث وإحصائيات ---------- */
 function list(f = {}) {
-  const where = ['dt.archived = ?'];
-  const params = [Number(f.includeArchived) ? 1 : 0];
+  const where = [];
+  const params = [];
+  if (f.archivedOnly) {
+    where.push('dt.archived = 1');
+  } else {
+    where.push('dt.archived = 0');
+  }
 
   if (f.q && String(f.q).trim()) {
     const term = `%${String(f.q).trim()}%`;

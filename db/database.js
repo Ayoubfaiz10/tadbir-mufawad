@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('../node_modules/sql.js/dist/sql-wasm.js');
 const { MIGRATIONS, VERSION } = require('./schema');
-const { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters } = require('./seed');
+const { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters, seedDocumentTypes } = require('./seed');
 
 let SQL = null;
 let db = null;
@@ -214,6 +214,7 @@ async function initDatabase(dataDir) {
   seedPvConfig({ get, run, tx });
   seedPaymentMethods({ get, run, tx });
   seedRegisters({ get, run, tx });
+  seedDocumentTypes({ get, run, tx });
 
   // كلمات المرور تُنشأ عبر "التسجيل الأول" (auth.setupInitial) — لا افتراضيات
   persist();

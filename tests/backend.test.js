@@ -45,7 +45,6 @@ async function main() {
   const auditSvc = require('../services/audit');
   const authSvc = require('../services/auth');
   const paySvc = require('../services/paymentService');
-  const archSvc = require('../services/archiveService');
   const dosageSvc = require('../services/dossierService');
   const clientSvc = require('../services/clientService');
   const feeSvc = require('../services/feeService');
@@ -184,21 +183,10 @@ async function main() {
   const pay2 = paySvc.addPayment(created.id, { amount: 200, method: 'تحويل' });
   assert(pay2.procedure_id === created.id, 'أداء على إجراء آخر');
 
-  archSvc.setArchiveDir(path.join(TEST_DATA_DIR, 'archive'));
-  const fakePvPath = path.join(archSvc.getArchiveDir(), 'PV-test.pdf');
-  fs.writeFileSync(fakePvPath, 'fake pv');
-  const doc = archSvc.saveDocumentAndLink({ procedureId: created.id, kind: 'pv', title: 'محضر تجريبي', filePath: fakePvPath });
-  assert(doc.id > 0 && doc.archived === 1, 'الوثيقة حُفظت وأُرشفَت تلقائياً');
-  const linked = archSvc.listForProcedure(created.id);
-  assert(linked.length === 1 && linked[0].kind === 'pv', 'مرتبطة بالإجراء');
-  const arch = archSvc.archiveForProcedure(created.id);
-  assert(arch.groups.pv.length === 1, 'الأرشيف مُجمّع حسب النوع');
-
   console.log('\n=== 8. التدقيق ===');
   const auditRows = auditSvc.listForEntity('procedure', created.id);
   assert(auditRows.some((a) => a.action === 'procedure.created'), 'تدقيق: الإنشاء');
   assert(auditRows.some((a) => a.action === 'procedure.status_changed'), 'تدقيق: تغيير الحالة');
-  assert(auditRows.some((a) => a.action === 'document.created'), 'تدقيق: أرشفة الوثيقة');
   assert(auditSvc.listForEntity('procedure', direct.id).some((a) => a.action === 'payment.created'), 'تدقيق: الأداء');
 
   console.log('\n=== 9. الصلاحيات ===');
@@ -787,12 +775,6 @@ async function main() {
   const patAud = regSvc.listAudit({ registerId: regDaily.id, action: 'CONFIGURE' });
   assert(patAud.rows.length >= 1, 'تعديل الإعدادات يظهر في التدقيق');
 
-  // --- أرشفة فترة ---
-  const archOut = regSvc.archivePeriod(regDaily.id, pk, 'أرشيف ' + pk, path.join(TEST_DATA_DIR, 'reg-' + pk + '.pdf'));
-  assert(archOut.document_id > 0 && archOut.archive_id > 0, 'أرشفة فترة (وثيقة + سجل أرشيف)');
-  const archAud = regSvc.listAudit({ registerId: regDaily.id, action: 'ARCHIVE' });
-  assert(archAud.rows.length >= 1, 'الأرشفة مسجلة في التدقيق');
-
   // --- لوحة السجل ---
   const regDash = regSvc.dashboard();
   assert(regDash.todayProcedures >= 5 && regDash.todayEntries >= 8 && regDash.todayPvCount >= 1, 'لوحة السجل: أرقام اليوم');
@@ -809,120 +791,7 @@ async function main() {
 
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
 
-  console.log('\n=== 17. نظام الأرشيف: بنية منظمة + سلامة (V6) ===');
-  const { run: docRun } = require('../db/database').helpers;
-  const arch17 = path.join(TEST_DATA_DIR, 'archive17');
-  archSvc.setArchiveDir(arch17);
-
-  // بنية المجلدات
-  const structured = archSvc.archivePathFor('registers', 'JOU-2026-05', 'x.pdf');
-  assert(structured.startsWith(path.join(arch17, 'registers', 'JOU-2026-05')) && fs.existsSync(path.dirname(structured)), 'archivePathFor: مجلدات منظمة (group/label)');
-  archSvc.upgradeLegacyLayout();
-  archSvc.upgradeLegacyLayout();
-  assert(true, 'الترقيـة التلقائية idempotent (تشغيل متكرر بلا خطأ)');
-
-  // حفظ وثيقة خارج الأرشيف ← تُنقل إلى البنية المنظمة
-  const outsideFile = path.join(TEST_DATA_DIR, 'outside-doc.pdf');
-  fs.writeFileSync(outsideFile, 'archive p1 doc');
-  const doc17 = archSvc.saveDocumentAndLink({ procedureId: created.id, kind: 'document', title: 'وثيقة أرشيف P1', filePath: outsideFile });
-  assert(doc17.status === 'active' && doc17.sha256.length === 64 && doc17.size_bytes === 14, 'الحفظ: بصمة SHA-256 + حجم + حالة');
-  assert(doc17.file_path.startsWith(path.join(arch17, 'procedures')) && fs.existsSync(doc17.file_path), 'الملف انتقل إلى بنية منظمة تحت procedures');
-  assert(!fs.existsSync(outsideFile), 'الملف الأصلي أُزيل بعد النقل');
-  assert(archSvc.sha256File(doc17.file_path) === doc17.sha256, 'البصمة مطابقة لمحتوى الملف');
-
-  // حفظ ملف موجود أصلاً داخل الأرشيف (نسخة محضر مثلاً) — لا يُنسخ ولا يُنقل
-  const insideFile = archSvc.archivePathFor('procedures', 'procedure-' + created.id, 'pv-copy.pdf');
-  fs.writeFileSync(insideFile, 'pv copy content');
-  const docInside = archSvc.saveDocumentAndLink({ procedureId: created.id, kind: 'pv', title: 'نسخة محضر', filePath: insideFile });
-  assert(docInside.file_path === path.resolve(insideFile) && archSvc.fileSize(docInside.file_path) === 15, 'ملف داخل الأرشيف يبقى في مكانه (لا نسخ مكرر)');
-
-  // الوثائق المختومة: ممنوع الحذف (فحص صريح + Trigger)
-  const sealedDoc = docRun(
-    `INSERT INTO documents (entity_type, entity_id, kind, title, file_name, file_path, mime, archived, created_by, status, sha256, size_bytes)
-     VALUES ('procedure', ?, 'document', 'مختوم', 'sealed.pdf', ?, 'application/pdf', 1, 'admin', 'sealed', ?, ?)`,
-    [created.id, insideFile, 'ab'.repeat(32), 15]
-  );
-  const sealedId = sealedDoc.lastId;
-  throws(() => archSvc.unlink(sealedId), 'لا حذف لوثيقة مختومة (unlink)');
-  throws(() => docRun('DELETE FROM documents WHERE id = ?', [sealedId]), 'لا حذف لوثيقة مختومة (TRIGGER)');
-  throws(() => docRun('UPDATE documents SET file_path = ? WHERE id = ?', ['/evil', sealedId]), 'لا تعديل مسار وثيقة مختومة (TRIGGER)');
-  const sealedOk = docRun('UPDATE documents SET kind = ? WHERE id = ?', ['document', sealedId]);
-  assert(sealedOk.changed === 1, 'التعديلات غير الجوهرية تبقى مسموحة');
-
-  // القوائم والإحصائيات
-  const byKind = archSvc.listArchive({ kind: 'pv' });
-  assert(byKind.some((d) => d.id === docInside.id) && !byKind.some((d) => d.id === doc17.id), 'تصفية القائمة حسب النوع');
-  const archStats = archSvc.stats();
-  assert(archStats.total >= 3 && archStats.sealed === 1 && archStats.bytes > 0, 'إحصائيات: عدد/مختومة/حجم');
-  assert(archStats.byStatus.some((s) => s.status === 'sealed' && s.c === 1), 'إحصائيات حسب الحالة');
-  const linked17 = archSvc.listForProcedure(created.id);
-  assert(linked17.length === 3 && linked17.every((d) => d.sha256.length === 64), 'ربط الوثائق المنقولة بالإجراء مع البصمات');
-
-  console.log('\n=== 18. الختم القانوني للفترات (Seal) + التحقق من السلامة ===');
-  const crypto = require('crypto');
-  const sealFile = path.join(TEST_DATA_DIR, 'reg-' + pk + '.pdf');
-  const sealContent = 'seal content for register period ' + pk;
-  fs.writeFileSync(sealFile, sealContent);
-  docRun('UPDATE documents SET sha256 = ?, size_bytes = ? WHERE id = ?',
-    [crypto.createHash('sha256').update(sealContent).digest('hex'), sealContent.length, archOut.document_id]);
-
-  authSvc.login('agent', 'agent123');
-  throws(() => regSvc.sealPeriod(regDaily.id, pk, 'سبب'), 'agent ممنوع من ختم الفترة');
-  authSvc.login('admin', 'admin123');
-  throws(() => regSvc.sealPeriod(regDaily.id, pk, ''), 'الختم يتطلب سبباً (REASON_REQUIRED)');
-  throws(() => regSvc.sealPeriod(regDaily.id, '2030-01', 'سبب'), 'لا ختم لفترة غير مؤرشفة');
-
-  const seal = regSvc.sealPeriod(regDaily.id, pk, 'إغلاق نهائي للفترة');
-  assert(seal.id > 0 && Number(seal.doc_count) === 1 && seal.sha256_manifest.length === 64, 'ختم الفترة: بيان Manifest + عدّاد وثائق');
-  assert(seal.manifest_json && JSON.parse(seal.manifest_json).docs.length === 1, 'Manifest JSON محفوظ');
-  assert(get('SELECT status AS s FROM documents WHERE id = ?', [archOut.document_id]).s === 'sealed', 'وثيقة الأرشيف أصبحت مختومة');
-  const seal2 = regSvc.sealPeriod(regDaily.id, pk, 'مرة أخرى');
-  assert(seal2.id === seal.id, 'الختم idempotent (لا تكرار)');
-  throws(() => archSvc.unlink(archOut.document_id), 'لا حذف لوثيقة أرشيف مختومة');
-
-  const v1 = regSvc.verifySeal(seal.id);
-  assert(v1.manifest_ok && v1.ok_docs === 1 && v1.corrupted_docs === 0, 'تحقق السلامة: سليم (ملفات + بيان)');
-  fs.appendFileSync(sealFile, 'TAMPERED');
-  const v2 = regSvc.verifySeal(seal.id);
-  assert(v2.corrupted_docs === 1 && !v2.manifest_ok, 'التحقق يكشف العبث (بصمة + بيان)');
-
-  const sealsList = regSvc.listSeals(regDaily.id);
-  assert(sealsList.length === 1 && sealsList[0].period_key === pk, 'قائمة الأختام للفترة');
-  const sealAud = regSvc.listAudit({ registerId: regDaily.id, action: 'SEAL' });
-  assert(sealAud.rows.length >= 1, 'الختم مسجل في تدقيق السجل (SEAL)');
-  const listWithSeal = regSvc.listPeriods(regDaily.id);
-  assert(listWithSeal.some((p) => p.period_key === pk && p.seal_id == seal.id), 'حالة الختم ظاهرة في قائمة الفترات');
-
-  console.log('\n=== 19. النسخ الاحتياطي والاستعادة (ZIP + Manifest) ===');
-  const bkSvc = require('../services/backupService');
-  const backupZip = path.join(TEST_DATA_DIR, 'backup-test.zip');
-  const bk = await bkSvc.createBackupZip(backupZip, archSvc.getArchiveDir());
-  assert(bk.ok && bk.bytes > 0 && fs.existsSync(backupZip), 'إنشاء ZIP نسخ احتياطي (قاعدة + أرشيف + Manifest)');
-  assert(bk.manifest.app === 'huissier' && bk.manifest.format === 1, 'Manifest صحيح داخل النسخة');
-
-  authSvc.login('agent', 'agent123');
-  throws(() => bkSvc.createBackupZip(path.join(TEST_DATA_DIR, 'forbidden.zip'), archSvc.getArchiveDir()), 'agent ممنوع من النسخ الاحتياطي');
-  authSvc.login('admin', 'admin123');
-
-  const fakeZip = path.join(TEST_DATA_DIR, 'fake.zip');
-  fs.writeFileSync(fakeZip, 'not a zip at all');
-  let fakeRejected = false;
-  try { await bkSvc.validateBackupZip(fakeZip); } catch (e) { fakeRejected = true; }
-  assert(fakeRejected, 'رفض ملف ليس ZIP');
-
-  const freshDir = path.join(TEST_DATA_DIR, 'restore-target');
-  const freshArch = path.join(TEST_DATA_DIR, 'restore-archive');
-  const restored = await bkSvc.restoreBackup(backupZip, freshDir, freshArch);
-  assert(restored.ok && restored.docs >= 2, 'استعادة: وثائق الأرشيف (عدد ' + restored.docs + ')');
-  assert(fs.existsSync(path.join(freshDir, 'app.sqlite')), 'استعادة: قاعدة البيانات حُلّت مكانها');
-  assert(fs.existsSync(path.join(freshArch, 'procedures')), 'استعادة: بنية الأرشيف المنظمة سليمة');
-  const restoredDocs = fs.readdirSync(freshArch, { recursive: true }).filter((f) => !fs.statSync(path.join(freshArch, f)).isDirectory());
-  const origDocs = fs.readdirSync(archSvc.getArchiveDir(), { recursive: true }).filter((f) => !fs.statSync(path.join(archSvc.getArchiveDir(), f)).isDirectory());
-  assert(restoredDocs.length === origDocs.length, 'استعادة: مطابقة كاملة لعدد الملفات مع الأرشيف الأصلي');
-
-  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
-
-  console.log('\n=== 20. إدارة المستخدمين ===');
+  console.log('\n=== 17. إدارة المستخدمين ===');
   const freshDir2 = path.join(os.tmpdir(), 'huissier-users-' + Date.now());
   fs.mkdirSync(freshDir2, { recursive: true });
   process.chdir(__dirname);

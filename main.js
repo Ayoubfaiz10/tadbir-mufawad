@@ -4,7 +4,6 @@ const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 const { initDatabase } = require('./db/database');
 const ipc = require('./ipc');
-const archiveService = require('./services/archiveService');
 
 let mainWindow = null;
 
@@ -61,7 +60,10 @@ function buildMenu() {
 app.whenReady().then(async () => {
   try {
     await initDatabase(path.join(app.getPath('userData'), 'data'));
-    archiveService.setArchiveDir(path.join(app.getPath('userData'), 'data', 'archive'));
+    const documentService = require('./services/documentService');
+    documentService.setOutputDir(path.join(app.getPath('userData'), 'data', 'output'));
+    const archiveStorage = require('./services/archiveStorage');
+    archiveStorage.setArchiveRoot(path.join(app.getPath('userData'), 'data', 'archive'));
     console.log('✔ قاعدة البيانات جاهزة:', path.join(app.getPath('userData'), 'data', 'app.sqlite'));
   } catch (e) {
     console.error('فشل تهيئة قاعدة البيانات:', e);

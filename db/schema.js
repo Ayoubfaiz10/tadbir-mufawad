@@ -5,7 +5,7 @@
    Migrations خطية بترتيب إضافة.
    ================================================================ */
 
-const VERSION = 8;
+const VERSION = 10;
 
 const MIGRATIONS = [
   {
@@ -819,6 +819,191 @@ const MIGRATIONS = [
     up: `
       -- ---------- كلمات مرور المستخدمين (مصادقة بالدخول) ----------
       ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT '';
+    `
+  },
+  {
+    version: 9,
+    up: `
+      -- ================================================================
+      -- نظام الأرشيف المركزي لإدارة الوثائق (Migration v9)
+      -- Central Document Management System
+      -- ================================================================
+
+      -- ---------- أنواع الوثائق (قابلة للتهيئة من الإعدادات) ----------
+      CREATE TABLE IF NOT EXISTS document_types (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        name_ar TEXT NOT NULL,
+        name_fr TEXT NOT NULL,
+        description_ar TEXT NOT NULL DEFAULT '',
+        description_fr TEXT NOT NULL DEFAULT '',
+        icon TEXT NOT NULL DEFAULT 'fa-file',
+        numbering_pattern TEXT NOT NULL DEFAULT '{type}-{year}-{seq:000000}',
+        active INTEGER NOT NULL DEFAULT 1,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      -- ---------- الوثائق (الجدول الأساسي — مُعاد بناؤه) ----------
+      -- نحتفظ بالبيانات القديمة من documents عبر نسخة افتراضية
+      CREATE TABLE IF NOT EXISTS documents_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        doc_number TEXT UNIQUE NOT NULL,
+        document_type_id INTEGER REFERENCES document_types(id) ON DELETE SET NULL,
+        title TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'active',
+        file_name TEXT NOT NULL DEFAULT '',
+        storage_name TEXT NOT NULL DEFAULT '',
+        file_path TEXT NOT NULL DEFAULT '',
+        original_name TEXT NOT NULL DEFAULT '',
+        mime TEXT NOT NULL DEFAULT 'application/pdf',
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        sha256 TEXT NOT NULL DEFAULT '',
+        entity_type TEXT NOT NULL DEFAULT '',
+        entity_id INTEGER NOT NULL DEFAULT 0,
+        dossier_id INTEGER REFERENCES dossiers(id) ON DELETE SET NULL,
+        procedure_id INTEGER REFERENCES procedures(id) ON DELETE SET NULL,
+        pv_id INTEGER REFERENCES pvs(id) ON DELETE SET NULL,
+        version INTEGER NOT NULL DEFAULT 1,
+        is_latest INTEGER NOT NULL DEFAULT 1,
+        language TEXT NOT NULL DEFAULT 'ar',
+        period_key TEXT NOT NULL DEFAULT '',
+        deleted_at TEXT,
+        deleted_by TEXT NOT NULL DEFAULT '',
+        locked INTEGER NOT NULL DEFAULT 0,
+        locked_at TEXT,
+        locked_by TEXT NOT NULL DEFAULT '',
+        checksum_verified INTEGER NOT NULL DEFAULT 1,
+        source TEXT NOT NULL DEFAULT 'manual',
+        template_id INTEGER NOT NULL DEFAULT 0,
+        template_version_id INTEGER NOT NULL DEFAULT 0,
+        created_by TEXT NOT NULL DEFAULT 'system',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_doc2_number ON documents_v2(doc_number);
+      CREATE INDEX IF NOT EXISTS idx_doc2_type ON documents_v2(document_type_id);
+      CREATE INDEX IF NOT EXISTS idx_doc2_status ON documents_v2(status);
+      CREATE INDEX IF NOT EXISTS idx_doc2_entity ON documents_v2(entity_type, entity_id);
+      CREATE INDEX IF NOT EXISTS idx_doc2_dossier ON documents_v2(dossier_id);
+      CREATE INDEX IF NOT EXISTS idx_doc2_procedure ON documents_v2(procedure_id);
+      CREATE INDEX IF NOT EXISTS idx_doc2_pv ON documents_v2(pv_id);
+      CREATE INDEX IF NOT EXISTS idx_doc2_period ON documents_v2(period_key);
+      CREATE INDEX IF NOT EXISTS idx_doc2_sha ON documents_v2(sha256);
+      CREATE INDEX IF NOT EXISTS idx_doc2_deleted ON documents_v2(deleted_at);
+      CREATE INDEX IF NOT EXISTS idx_doc2_created ON documents_v2(created_at);
+
+      -- ---------- إصدارات الوثيقة ----------
+      CREATE TABLE IF NOT EXISTS document_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        document_id INTEGER NOT NULL REFERENCES documents_v2(id) ON DELETE CASCADE,
+        version INTEGER NOT NULL,
+        file_name TEXT NOT NULL DEFAULT '',
+        storage_name TEXT NOT NULL DEFAULT '',
+        file_path TEXT NOT NULL DEFAULT '',
+        original_name TEXT NOT NULL DEFAULT '',
+        mime TEXT NOT NULL DEFAULT 'application/pdf',
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        sha256 TEXT NOT NULL DEFAULT '',
+        note TEXT NOT NULL DEFAULT '',
+        created_by TEXT NOT NULL DEFAULT 'system',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (document_id, version)
+      );
+      CREATE INDEX IF NOT EXISTS idx_dv_doc ON document_versions(document_id);
+
+      -- ---------- الوسوم ----------
+      CREATE TABLE IF NOT EXISTS document_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        color TEXT NOT NULL DEFAULT '#1f4e8c',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS document_tag_relations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        document_id INTEGER NOT NULL REFERENCES documents_v2(id) ON DELETE CASCADE,
+        tag_id INTEGER NOT NULL REFERENCES document_tags(id) ON DELETE CASCADE,
+        UNIQUE (document_id, tag_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_dtr_doc ON document_tag_relations(document_id);
+      CREATE INDEX IF NOT EXISTS idx_dtr_tag ON document_tag_relations(tag_id);
+
+      -- ---------- علاقات الوثائق ببعض ----------
+      CREATE TABLE IF NOT EXISTS document_relations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        from_doc_id INTEGER NOT NULL REFERENCES documents_v2(id) ON DELETE CASCADE,
+        to_doc_id INTEGER NOT NULL REFERENCES documents_v2(id) ON DELETE CASCADE,
+        relation_type TEXT NOT NULL DEFAULT 'related',
+        note TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (from_doc_id, to_doc_id, relation_type)
+      );
+      CREATE INDEX IF NOT EXISTS idx_drel_from ON document_relations(from_doc_id);
+      CREATE INDEX IF NOT EXISTS idx_drel_to ON document_relations(to_doc_id);
+
+      -- ---------- سجل تدقيق الوثائق ----------
+      CREATE TABLE IF NOT EXISTS document_audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        document_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        by_user TEXT NOT NULL DEFAULT 'system',
+        old_value TEXT NOT NULL DEFAULT '',
+        new_value TEXT NOT NULL DEFAULT '',
+        metadata TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_dal_doc ON document_audit_logs(document_id);
+      CREATE INDEX IF NOT EXISTS idx_dal_action ON document_audit_logs(action);
+      CREATE INDEX IF NOT EXISTS idx_dal_created ON document_audit_logs(created_at);
+
+      -- ---------- نسخ البيانات القديمة إلى documents_v2 ----------
+      INSERT OR IGNORE INTO documents_v2 (
+        doc_number, title, status, file_name, file_path, mime, size_bytes,
+        entity_type, entity_id, created_by, created_at, source,
+        template_id, template_version_id, language, period_key
+      )
+      SELECT
+        'DOC-' || printf('%06d', d.id),
+        d.title,
+        d.status,
+        d.file_name,
+        d.file_path,
+        COALESCE(NULLIF(d.mime, ''), 'application/pdf'),
+        0,
+        d.entity_type,
+        d.entity_id,
+        COALESCE(NULLIF(d.created_by, ''), 'system'),
+        d.created_at,
+        d.source,
+        d.template_id,
+        d.template_version_id,
+        'ar',
+        d.period_key
+      FROM documents d
+      WHERE d.id NOT IN (SELECT id FROM documents_v2);
+
+      -- ---------- حماية الوثائق المختومة ----------
+      CREATE TRIGGER IF NOT EXISTS trg_doc2_locked_no_delete
+      BEFORE DELETE ON documents_v2 FOR EACH ROW
+      WHEN OLD.locked = 1
+      BEGIN SELECT RAISE(ABORT, 'DOC:LOCKED:NO_DELETE'); END;
+
+      CREATE TRIGGER IF NOT EXISTS trg_doc2_locked_no_update
+      BEFORE UPDATE ON documents_v2 FOR EACH ROW
+      WHEN OLD.locked = 1
+        AND (NEW.file_path <> OLD.file_path OR NEW.sha256 <> OLD.sha256 OR NEW.locked <> 1)
+      BEGIN SELECT RAISE(ABORT, 'DOC:LOCKED:NO_MODIFY'); END;
+    `
+  },
+  // ——————————— Migration v10: أرشيفة الملفات القضائية ————————
+  {
+    version: 10,
+    up: `
+      ALTER TABLE procedures ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE procedures ADD COLUMN archived_at TEXT;
+      CREATE INDEX IF NOT EXISTS idx_procedures_archived ON procedures(archived);
     `
   }
 ];

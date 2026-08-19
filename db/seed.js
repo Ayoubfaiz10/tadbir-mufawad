@@ -296,6 +296,31 @@ function seedPvConfig({ get, run, tx }) {
    لا تمثل أي مقتضيات قانونية ملزمة — Business Requirements من مهني.
    لا تُبذر أتعاب أو رسوم هنا (لا أتعاب مكتوبة في الكود).
    ================================================================ */
+function seedDocumentTypes({ get, run, tx }) {
+  const count = get('SELECT COUNT(*) AS c FROM document_types').c;
+  if (count > 0) return;
+
+  return tx(() => {
+    const types = [
+      ['PV', 'محضر', 'Procès-verbal', 'محضر قضائي أو إداري', 'Procès-verbal judiciaire ou administratif', 'fa-file-signature', 1],
+      ['RECEIPT', 'وصل', 'Reçu', 'وصل أداء', 'Reçu de paiement', 'fa-receipt', 2],
+      ['NOTIFICATION', 'تبليغ', 'Signification', 'وثيقة تبليغ', 'Document de signification', 'fa-bell', 3],
+      ['JUDGMENT', 'حكم', 'Jugement', 'حكم قضائي', 'Jugement judiciaire', 'fa-gavel', 4],
+      ['CONTRACT', 'عقد', 'Contrat', 'عقد أو اتفاقية', 'Contrat ou convention', 'fa-file-contract', 5],
+      ['CORRESPONDENCE', 'مراسلة', 'Correspondance', 'مراسلة رسمية', 'Correspondance officielle', 'fa-envelope', 6],
+      ['REPORT', 'تقرير', 'Rapport', 'تقرير أو معاينة', 'Rapport ou constat', 'fa-file-lines', 7],
+      ['OTHER', 'أخرى', 'Autre', 'وثيقة أخرى', 'Autre document', 'fa-file', 99]
+    ];
+    types.forEach(([code, ar, fr, descAr, descFr, icon, order]) => {
+      run(
+        `INSERT INTO document_types (code, name_ar, name_fr, description_ar, description_fr, icon, numbering_pattern, active, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, '{type}-{year}-{seq:000000}', 1, ?)`,
+        [code, ar, fr, descAr, descFr, icon, order]
+      );
+    });
+  });
+}
+
 function seedPaymentMethods({ get, run, tx }) {
   const count = get('SELECT COUNT(*) AS c FROM payment_methods').c;
   if (count > 0) return;
@@ -349,4 +374,4 @@ function seedRegisters({ get, run, tx }) {
   });
 }
 
-module.exports = { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters };
+module.exports = { seedIfEmpty, seedTemplateLibrary, seedPvConfig, seedPaymentMethods, seedRegisters, seedDocumentTypes };

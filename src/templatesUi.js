@@ -21,7 +21,6 @@
     procedureTypeId: '',
     language: '',
     status: 'active',
-    includeArchived: false,
     loaded: 0,
     total: 0,
     rows: [],
@@ -95,8 +94,7 @@
       <th>${state.lang === 'fr' ? 'Statut' : 'الحالة'}</th>
       <th>${state.lang === 'fr' ? 'Actions' : 'إجراءات'}</th>
     </tr>`;
-    byId('tpl-filter-chip').hidden = !(state2.category || state2.procedureTypeId || state2.language || state2.status !== 'active' || state2.includeArchived);
-    byId('tpl-archive-toggle').classList.toggle('active', state2.includeArchived);
+    byId('tpl-filter-chip').hidden = !(state2.category || state2.procedureTypeId || state2.language || state2.status !== 'active');
     await loadList(false);
     await loadStats();
   }
@@ -120,7 +118,6 @@
         procedureTypeId: state2.procedureTypeId || undefined,
         language: state2.language || undefined,
         status: state2.status || undefined,
-        includeArchived: state2.includeArchived,
         page,
         pageSize: state2.pageSize
       };
@@ -199,7 +196,7 @@
             { v: 'all', l: state.lang === 'fr' ? 'Tous' : 'الكل' }
           ], state2.status)}</select>
         </div>
-        <label class="check-inline"><input type="checkbox" id="f-tpl-arch" ${state2.includeArchived ? 'checked' : ''}> ${state.lang === 'fr' ? 'Inclure les archivés' : 'شمل المؤرشفة'}</label>
+
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" data-fclear>${t('procedures.clearFilters')}</button>
@@ -212,13 +209,12 @@
       state2.procedureTypeId = byId('f-tpl-type').value;
       state2.language = byId('f-tpl-lang').value;
       state2.status = byId('f-tpl-status').value;
-      state2.includeArchived = byId('f-tpl-arch').checked;
       closeModal();
       render();
     };
     modal.body.querySelector('[data-fclear]').onclick = () => {
       state2.category = ''; state2.procedureTypeId = '';
-      state2.language = ''; state2.status = 'active'; state2.includeArchived = false;
+      state2.language = ''; state2.status = 'active';
       closeModal();
       render();
     };
@@ -642,14 +638,10 @@
 
     byId('tpl-add').addEventListener('click', () => openEditor(null));
     byId('tpl-filter').addEventListener('click', openFilters);
-    byId('tpl-archive-toggle').addEventListener('click', () => {
-      state2.includeArchived = !state2.includeArchived;
-      render();
-    });
     byId('tpl-more').addEventListener('click', () => loadList(true));
     byId('tpl-filter-chip').addEventListener('click', () => {
       state2.category = ''; state2.procedureTypeId = ''; state2.language = '';
-      state2.status = 'active'; state2.includeArchived = false;
+      state2.status = 'active';
       render();
     });
 

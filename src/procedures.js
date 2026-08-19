@@ -23,7 +23,7 @@
   let searchTimer = null;
 
   /* ---------- تفاصيل ---------- */
-  const TABS = ['info', 'timeline', 'parties', 'documents', 'payments', 'archive', 'audit'];
+  const TABS = ['info', 'timeline', 'parties', 'documents', 'payments', 'audit'];
   let detail = null;
   let detailTab = 'info';
 
@@ -269,7 +269,6 @@
       case 'parties': body.innerHTML = partiesHtml(); break;
       case 'documents': body.innerHTML = await documentsHtml(); break;
       case 'payments': body.innerHTML = paymentsHtml(); break;
-      case 'archive': body.innerHTML = await archiveHtml(); break;
       case 'audit': body.innerHTML = await auditHtml(); break;
     }
     bindDetailActions();
@@ -482,30 +481,6 @@
             </tr>`).join('')}
         </tbody></table></div>
       </div>`;
-  }
-
-  async function archiveHtml() {
-    let ar;
-    try { ar = await API.archiveForProcedure(detail.id); } catch (e) { return `<p class="hint">—</p>`; }
-    const groups = ar.groups || {};
-    const keys = ['pv', 'receipt', 'document', 'other'];
-    const has = keys.some((k) => (groups[k] || []).length);
-    if (!has) return `<p class="hint">${t('procDetails.emptyDocs')}</p>`;
-    return keys.filter((k) => (groups[k] || []).length).map((k) => `
-      <div class="det-group">
-        <h5><i class="fas ${k === 'pv' ? 'fa-file-circle-check' : k === 'receipt' ? 'fa-receipt' : 'fa-file-lines'}"></i> ${t('procDetails.docs.' + (k === 'pv' ? 'pv' : k))} (${groups[k].length})</h5>
-        <div class="table-wrap"><table class="data-table"><tbody>
-          ${groups[k].map((x) => `
-            <tr>
-              <td><strong>${esc(x.title || x.file_name)}</strong><br><small class="muted">${fmtDate(x.created_at)}</small></td>
-              <td><div class="row-actions">
-                <button class="row-btn" data-doc-action="${x.id}" data-op="open" title="${t('procDetails.docs.open')}"><i class="fas fa-folder-open"></i></button>
-                <button class="row-btn" data-doc-action="${x.id}" data-op="download" title="${t('procDetails.docs.download')}"><i class="fas fa-download"></i></button>
-                <button class="row-btn" data-doc-action="${x.id}" data-op="print" title="${t('procDetails.docs.print')}"><i class="fas fa-print"></i></button>
-              </div></td>
-            </tr>`).join('')}
-        </tbody></table></div>
-      </div>`).join('');
   }
 
   async function auditHtml() {

@@ -19,10 +19,10 @@
 
 const { get, all, run, tx, nextSequence } = require('../db/database').helpers;
 const crypto = require('crypto');
+const fs = require('fs');
 const audit = require('./audit');
 const { getCurrentUser, requireAuth } = require('./auth');
   const settingsService = require('./settingsService');
-  const archiveService = require('./archiveService');
 
 const DAILY = 'DAILY_PROCEDURE';
 const ACCOUNTING = 'ACCOUNTING';
@@ -1111,8 +1111,11 @@ function escapeHtml(v) {
 
 /* ================================================================
    أرشيف السجلات: حُفِظَ سجل قاعدة البيانات + الوثيقة معاً
+   الملف يُخزَّن عبر archiveStorage (UUID + SHA-256 + مجلدات الفترات)
    ================================================================ */
-function archivePeriod(registerId, periodKey, title, filePath) {
+const archiveStorage = require('./archiveStorage');
+
+function archivePeriod(registerId, periodKey, title, fileBuffer) {
   requireAuth('register.export');
   const reg = getRegisterById(registerId);
   if (!reg) throw new Error('NOT_FOUND:register:' + registerId);
@@ -1120,29 +1123,30 @@ function archivePeriod(registerId, periodKey, title, filePath) {
   if (!/^\d{4}-\d{2}$/.test(pk)) throw new Error('VALIDATION:register:invalidPeriod');
 
   const user = getCurrentUser();
+  const filename = `${reg.code || 'register'}-${pk}.pdf`;
+  const stored = archiveStorage.storeFile(fileBuffer, filename, {
+    mime: 'application/pdf',
+    periodKey: pk,
+    entityType: 'register-archive'
+  });
+
   const result = tx(() => {
-    const sha = archiveService.sha256File(filePath);
-    const size = archiveService.fileSize(filePath);
     const doc = run(
       `INSERT INTO documents (entity_type, entity_id, kind, title, file_name, file_path, mime, archived, created_by, status, sha256, size_bytes, period_key, source)
-       VALUES ('register', ?, 'register-archive', ?, ?, ?, 'application/pdf', 1, ?, 'active', ?, ?, ?, 'auto')`,
-      [reg.id, safeVal(title, 300), pathBase(filePath) + '.pdf', filePath, user.username, sha, size, pk]
+       VALUES ('register', ?, 'register-archive', ?, ?, ?, ?, 1, ?, 'active', ?, ?, ?, 'auto')`,
+      [reg.id, safeVal(title, 300), filename, stored.filePath, stored.mime, user.username, stored.sha256, stored.sizeBytes, pk]
     );
     const arch = run(
       `INSERT INTO register_archives (register_id, period_key, document_id, archived_by) VALUES (?,?,?,?)`,
       [reg.id, pk, doc.lastId, user.username]
     );
     logAudit(reg.id, 'ARCHIVE', {
-      newValue: { period: pk, document_id: doc.lastId },
+      newValue: { period: pk, document_id: doc.lastId, sha256: stored.sha256 },
       reason: 'أرشفة فترة ' + pk
     });
     return { document_id: doc.lastId, archive_id: arch.lastId };
   });
-  return { document_id: result.document_id, archive_id: result.archive_id, period_key: pk, filePath };
-}
-
-function pathBase(p) {
-  return String(p).replace(/\.pdf$/i, '').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+  return { document_id: result.document_id, archive_id: result.archive_id, period_key: pk, filePath: stored.filePath, sha256: stored.sha256, size: stored.sizeBytes };
 }
 
 /* ================================================================
@@ -1206,7 +1210,8 @@ function verifySeal(sealId) {
     throw new Error('ARCHIVE:SEAL_MANIFEST_INVALID');
   }
   const results = manifest.docs.map((m) => {
-    const current = archiveService.sha256File(m.file);
+    let current = '';
+    try { current = crypto.createHash('sha256').update(fs.readFileSync(m.file)).digest('hex'); } catch (e) { current = ''; }
     return { id: m.id, title: m.title, file: m.file, expected: m.sha256, current, size: m.size || 0, ok: current.length === 64 && current === m.sha256 };
   });
   const manifestNow = crypto.createHash('sha256')
