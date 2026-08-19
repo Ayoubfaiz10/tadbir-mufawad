@@ -468,6 +468,34 @@ function register() {
     numberingPattern: input.numberingPattern !== undefined ? str(input.numberingPattern) : undefined
   }));
   genHandle('arc:docTypeDelete', (id) => documentService.deleteDocType(int(id)));
+  genHandle('arc:createWithFile', async (input) => {
+    const doc = documentService.createDocument({
+      document_type_id: input.document_type_id ? int(input.document_type_id) : null,
+      title: str(input.title, 500),
+      description: str(input.description, 2000),
+      entity_type: str(input.entity_type, 50),
+      entity_id: int(input.entity_id) || 0,
+      dossier_id: input.dossier_id ? int(input.dossier_id) : null,
+      procedure_id: input.procedure_id ? int(input.procedure_id) : null,
+      pv_id: input.pv_id ? int(input.pv_id) : null,
+      language: str(input.language, 5) || 'ar',
+      status: str(input.status, 20) || 'active',
+      source: 'manual'
+    });
+    if (input.filePath && doc) {
+      const result = await archiveStorage.storeFileFromPath(str(input.filePath), str(input.originalName), { mime: str(input.mime) });
+      dbCore.helpers.run(
+        `UPDATE documents_v2 SET file_name = ?, storage_name = ?, file_path = ?, original_name = ?,
+         mime = ?, size_bytes = ?, sha256 = ?, checksum_verified = 1, updated_at = datetime('now')
+         WHERE id = ?`,
+        [path.basename(result.filePath), result.storageName, result.filePath, result.originalName,
+         result.mime, result.sizeBytes, result.sha256, doc.id]
+      );
+      documentService.logAudit(doc.id, 'file_uploaded', '', JSON.stringify({ sha256: result.sha256 }));
+      return documentService.getDoc(doc.id);
+    }
+    return doc;
+  });
   genHandle('arc:archivedTemplates', (f) => templateService.list({
     page: int(f.page) || 1,
     pageSize: int(f.pageSize) || 25,

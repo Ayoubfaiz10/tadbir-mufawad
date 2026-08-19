@@ -879,6 +879,7 @@
     "creating": "Création...",
     "verifyIntegrity": "Vérifier l'intégrité",
     "integrityOk": "Fichier intègre — empreinte SHA-256 correspondante",
-    "integrityFail": "Attention : le fichier pourrait être modifié — empreinte non correspondante"
+    "integrityFail": "Attention : le fichier pourrait être modifié — empreinte non correspondante",
+    "upload": "Téléverser un document"
   }
 }

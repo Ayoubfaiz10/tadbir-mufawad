@@ -144,6 +144,7 @@ contextBridge.exposeInMainWorld('appAPI', {
   arcDocTypeAdd: expose('arc:docTypeAdd'),
   arcDocTypeUpdate: expose('arc:docTypeUpdate'),
   arcDocTypeDelete: expose('arc:docTypeDelete'),
+  arcCreateWithFile: expose('arc:createWithFile'),
   arcArchivedTemplates: expose('arc:archivedTemplates'),
   arcVerifyIntegrity: expose('arc:verifyIntegrity'),
   arcUpload: expose('arc:upload'),
