@@ -669,6 +669,7 @@
     "assessments": {
       "title": "Évaluations",
       "empty": "Aucune évaluation.",
+      "add": "Nouvelle évaluation",
       "confirm": "Confirmer",
       "cancel": "Annuler",
       "detail": "Détails",
@@ -713,11 +714,17 @@
       "empty": "Aucune règle.",
       "overrideAmount": "Montant alternatif"
     },
+    "methods": {
+      "title": "Modes de paiement",
+      "add": "Nouveau mode"
+    },
     "ledger": {
       "title": "Grand livre",
       "summary": "Résumé financier",
       "dashboard": "Tableau de bord financier",
       "empty": "Aucun enregistrement.",
+      "procedureReport": "Rapport financier de la procédure",
+      "auditLog": "Journal financier",
       "col": {
         "date": "Date",
         "type": "Type",
