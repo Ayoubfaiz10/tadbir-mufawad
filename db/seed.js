@@ -65,36 +65,74 @@ function seedIfEmpty({ get, run, tx }) {
       ).lastId;
     });
 
-    // ---------- الحقول الديناميكية لكل نوع (بيانات فقط، لا مقتضيات قانونية) ----------
+    // ---------- الحقول الديناميكية لكل نوع ----------
     const fields = [
-      // التبليغ (قضائي)
+      // التبليغ (قضائي) — 9 حقول
       ['NOTIFICATION', 'act_to_notify', 'الوثيقة موضوع التبليغ', "L'acte à notifier", 'text', 1, 1, ''],
       ['NOTIFICATION', 'notif_date', 'تاريخ التبليغ', "Date de signification", 'date', 1, 2, ''],
       ['NOTIFICATION', 'notif_place', 'مكان التبليغ', "Lieu de signification", 'text', 0, 3, ''],
-      // تنفيذ الأحكام
+      ['NOTIFICATION', 'notif_method', 'طريقة التبليغ', "Mode de signification", 'select', 1, 4, 'شخصي, بالبريد الموصى عليه, بال宣示, عند المكتب'],
+      ['NOTIFICATION', 'notif_result', 'نتيجة التبليغ', "Résultat de la signification", 'select', 1, 5, 'تم التبليغ, شخص غائب, رفض استلام, عنوان خاطئ, بريد موصى عليه'],
+      ['NOTIFICATION', 'notif_time', 'ساعة التبليغ', "Heure de la signification", 'text', 0, 6, ''],
+      ['NOTIFICATION', 'notif_witnesses', 'الشهود', 'Témoins', 'text', 0, 7, ''],
+      ['NOTIFICATION', 'notif_obligee', 'المطالِب', 'Créancier', 'text', 0, 8, ''],
+      ['NOTIFICATION', 'notif_debtor', 'المدين', 'Débiteur', 'text', 0, 9, ''],
+      // تنفيذ الأحكام — 9 حقول
       ['EXECUTION_JUGEMENTS', 'title_ref', 'مرجع الحكم', 'Référence du jugement', 'text', 1, 1, ''],
       ['EXECUTION_JUGEMENTS', 'exec_amount', 'المبلغ محل التنفيذ', 'Montant à exécuter', 'number', 0, 2, ''],
       ['EXECUTION_JUGEMENTS', 'exec_notes', 'ملاحظات التنفيذ', "Notes d'exécution", 'textarea', 0, 3, ''],
-      // تنفيذ الأوامر
+      ['EXECUTION_JUGEMENTS', 'exec_court', 'المحكمة الصادرة عنها الحكم', 'Tribunal émetteur', 'text', 0, 4, ''],
+      ['EXECUTION_JUGEMENTS', 'exec_judgment_date', 'تاريخ الحكم', 'Date du jugement', 'date', 0, 5, ''],
+      ['EXECUTION_JUGEMENTS', 'exec_stage', 'مرحلة التنفيذ', "Étape d'exécution", 'select', 0, 6, '_pv宣布, محاولة التنفيذ, تنفيذ جزئي, تنفيذ كامل, فشل التنفيذ'],
+      ['EXECUTION_JUGEMENTS', 'exec_procedures', 'الإجراءات المنجزة', "Procédures effectuées", 'textarea', 0, 7, ''],
+      ['EXECUTION_JUGEMENTS', 'exec_result', 'نتيجة التنفيذ', "Résultat de l'exécution", 'select', 0, 8, 'تنفيذ كامل, تنفيذ جزئي, فشل, تأجيل'],
+      ['EXECUTION_JUGEMENTS', 'exec_expenses', 'مصاريف التنفيذ', "Frais d'exécution", 'number', 0, 9, ''],
+      // تنفيذ الأوامر — 7 حقول
       ['EXECUTION_ORDONNANCES', 'title_ref', 'مرجع الأمر', "Référence de l'ordonnance", 'text', 1, 1, ''],
       ['EXECUTION_ORDONNANCES', 'exec_amount', 'المبلغ محل التنفيذ', 'Montant à exécuter', 'number', 0, 2, ''],
-      // القيام بعمل
+      ['EXECUTION_ORDONNANCES', 'exec_court', 'المحكمة الصادرة عنها الأمر', 'Tribunal émetteur', 'text', 0, 3, ''],
+      ['EXECUTION_ORDONNANCES', 'exec_date', 'تاريخ الأمر', "Date de l'ordonnance", 'date', 0, 4, ''],
+      ['EXECUTION_ORDONNANCES', 'exec_procedures', 'الإجراءات المنجزة', "Procédures effectuées", 'textarea', 0, 5, ''],
+      ['EXECUTION_ORDONNANCES', 'exec_result', 'نتيجة التنفيذ', "Résultat de l'exécution", 'select', 0, 6, 'تنفيذ كامل, تنفيذ جزئي, فشل, تأجيل'],
+      ['EXECUTION_ORDONNANCES', 'exec_expenses', 'مصاريف التنفيذ', "Frais d'exécution", 'number', 0, 7, ''],
+      // القيام بعمل — 5 حقول
       ['FAIRE', 'action_desc', 'وصف العمل المطلوب', "Description de l'acte demandé", 'textarea', 1, 1, ''],
-      // تبليغ وتنفيذ
+      ['FAIRE', 'faire_deadline', 'الموعد النهائي للإنجاز', "Délai limite d'exécution", 'date', 0, 2, ''],
+      ['FAIRE', 'faire_location', 'مكان التنفيذ', "Lieu d'exécution", 'text', 0, 3, ''],
+      ['FAIRE', 'faire_result', 'نتيجة التنفيذ', "Résultat de l'exécution", 'textarea', 0, 4, ''],
+      ['FAIRE', 'faire_costs', 'تكلفة العمل', "Coût de l'acte", 'number', 0, 5, ''],
+      // تبليغ وتنفيذ — 8 حقول
       ['NOTIFICATION_EXECUTION', 'act_to_notify', 'الوثيقة موضوع التبليغ', "L'acte à notifier", 'text', 1, 1, ''],
       ['NOTIFICATION_EXECUTION', 'title_ref', 'مرجع الحكم/القرار', 'Référence du jugement/décision', 'text', 0, 2, ''],
       ['NOTIFICATION_EXECUTION', 'notif_date', 'تاريخ التبليغ', 'Date de signification', 'date', 0, 3, ''],
-      // التبليغات (مباشر)
+      ['NOTIFICATION_EXECUTION', 'notif_method', 'طريقة التبليغ', "Mode de signification", 'select', 0, 4, 'شخصي, بالبريد الموصى عليه, بال宣示'],
+      ['NOTIFICATION_EXECUTION', 'notif_result', 'نتيجة التبليغ', "Résultat de la signification", 'select', 0, 5, 'تم التبليغ, شخص غائب, رفض استلام'],
+      ['NOTIFICATION_EXECUTION', 'exec_amount', 'المبلغ محل التنفيذ', 'Montant à exécuter', 'number', 0, 6, ''],
+      ['NOTIFICATION_EXECUTION', 'exec_procedures', 'إجراءات التنفيذ المنجزة', "Procédures d'exécution effectuées", 'textarea', 0, 7, ''],
+      ['NOTIFICATION_EXECUTION', 'exec_result', 'نتيجة التنفيذ', "Résultat de l'exécution", 'select', 0, 8, 'تنفيذ كامل, تنفيذ جزئي, فشل'],
+      // التبليغات (مباشر) — 5 حقول
       ['NOTIFICATIONS', 'act_to_notify', 'الوثيقة موضوع التبليغ', "L'acte à notifier", 'text', 1, 1, ''],
       ['NOTIFICATIONS', 'notif_date', 'تاريخ التبليغ', 'Date de signification', 'date', 0, 2, ''],
-      // المعاينات
+      ['NOTIFICATIONS', 'notif_place', 'مكان التبليغ', "Lieu de signification", 'text', 0, 3, ''],
+      ['NOTIFICATIONS', 'notif_method', 'طريقة التبليغ', "Mode de signification", 'select', 0, 4, 'شخصي, بالبريد الموصى عليه, بال宣示'],
+      ['NOTIFICATIONS', 'notif_result', 'نتيجة التبليغ', "Résultat de la signification", 'select', 0, 5, 'تم التبليغ, شخص غائب, رفض استلام'],
+      // المعاينات — 8 حقول
       ['CONSTATATIONS', 'constat_object', 'موضوع المعاينة', "Objet du constat", 'text', 1, 1, ''],
       ['CONSTATATIONS', 'constat_date', 'تاريخ المعاينة', 'Date du constat', 'date', 0, 2, ''],
       ['CONSTATATIONS', 'constat_place', 'مكان المعاينة', "Lieu du constat", 'text', 0, 3, ''],
-      // عرض عيني
+      ['CONSTATATIONS', 'constat_attendees', 'الحاضرون', 'Personnes présentes', 'textarea', 0, 4, ''],
+      ['CONSTATATIONS', 'constat_facts', 'الوقائع المعاينة', 'Faits constatés', 'textarea', 1, 5, ''],
+      ['CONSTATATIONS', 'constat_attachments', 'المرفقات', 'Pièces jointes', 'textarea', 0, 6, ''],
+      ['CONSTATATIONS', 'constat_result', 'النتيجة والتراتيب', 'Résultat et dispositions', 'textarea', 0, 7, ''],
+      ['CONSTATATIONS', 'constat_photos', 'عدد الصور المحصلة', 'Nombre de photos', 'number', 0, 8, ''],
+      // عرض عيني — 7 حقول
       ['OFFRE_REELLE', 'offered_amount', 'المبلغ المعروض', 'Montant offert', 'number', 1, 1, ''],
       ['OFFRE_REELLE', 'offer_date', 'تاريخ العرض', "Date de l'offre", 'date', 0, 2, ''],
-      ['OFFRE_REELLE', 'offer_purpose', 'سبب العرض', "Motif de l'offre", 'textarea', 0, 3, '']
+      ['OFFRE_REELLE', 'offer_purpose', 'سبب العرض', "Motif de l'offre", 'textarea', 0, 3, ''],
+      ['OFFRE_REELLE', 'offer_creditor', 'دائن المبلغ', 'Créancier', 'text', 0, 4, ''],
+      ['OFFRE_REELLE', 'offer_debtor', 'المدين المعروض', 'Débiteur offrant', 'text', 0, 5, ''],
+      ['OFFRE_REELLE', 'offer_witnesses', 'الشهود', 'Témoins', 'text', 0, 6, ''],
+      ['OFFRE_REELLE', 'offer_acceptance', 'موقف الدائن من العرض', 'Réponse du créancier', 'select', 0, 7, 'مقبول, مرفوض, بدون رد']
     ];
 
     fields.forEach(([typeCode, key, ar, fr, ftype, req, order, opts]) => {
@@ -163,70 +201,23 @@ function seedTemplateLibrary({ get, run, tx }) {
       ).lastId;
     });
 
-    // نموذج تجريبي: محضر تبليغ (عربي) يستعمل المتغيرات الديناميكية
-    const arContent = `
-<h2>محضر تبليغ</h2>
-<p><strong>المؤرخ في:</strong> {{today_date}} — <strong>المكتب:</strong> {{office_name}}</p>
-<h4>١. بيان الملف</h4>
-<table>
-  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
-  <tr><td>المدعي</td><td>{{applicant_name}}</td></tr>
-  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
-  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
-</table>
-<h4>٢. الوثيقة موضوع التبليغ</h4>
-<p>{{field.act_to_notify}}</p>
-<h4>٣. الأطراف</h4>
-<p>{{party_name}} — CIN: {{party_cin}}<br>{{party_address}}</p>
-<h4>٤. الإجراء</h4>
-<table>
-  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
-  <tr><td>نوع الإجراء</td><td>{{procedure_type}}</td></tr>
-  <tr><td>ملاحظات</td><td>{{procedure_notes}}</td></tr>
-</table>
-<div class="sig">
-  <div class="col"><div class="line"></div>الطرف المبلَّغ</div>
-  <div class="col"><div class="line"></div>المفوض القضائي</div>
-</div>`;
+    // ربط القوالب بأنواع الإجراءات
+    const notifType = get("SELECT id FROM procedure_types WHERE code = 'NOTIFICATION'");
+    const execJudType = get("SELECT id FROM procedure_types WHERE code = 'EXECUTION_JUGEMENTS'");
+    const execOrdType = get("SELECT id FROM procedure_types WHERE code = 'EXECUTION_ORDONNANCES'");
+    const faireType = get("SELECT id FROM procedure_types WHERE code = 'FAIRE'");
+    const notifExecType = get("SELECT id FROM procedure_types WHERE code = 'NOTIFICATION_EXECUTION'");
+    const notifsType = get("SELECT id FROM procedure_types WHERE code = 'NOTIFICATIONS'");
+    const constatType = get("SELECT id FROM procedure_types WHERE code = 'CONSTATATIONS'");
+    const offreType = get("SELECT id FROM procedure_types WHERE code = 'OFFRE_REELLE'");
 
-    const frContent = `
-<h2>Procès-verbal de signification</h2>
-<p><strong>Fait le :</strong> {{today_date}} — <strong>Cabinet :</strong> {{office_name}}</p>
-<h4>1. Référence du dossier</h4>
-<table>
-  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
-  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
-  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
-  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
-</table>
-<h4>2. Acte objet de la signification</h4>
-<p>{{field.act_to_notify}}</p>
-<h4>3. Parties</h4>
-<p>{{party_name}} — CIN : {{party_cin}}<br>{{party_address}}</p>
-<h4>4. Procédure</h4>
-<table>
-  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
-  <tr><td>Type</td><td>{{procedure_type}}</td></tr>
-  <tr><td>Notes</td><td>{{procedure_notes}}</td></tr>
-</table>
-<div class="sig">
-  <div class="col"><div class="line"></div>Partie signifiée</div>
-  <div class="col"><div class="line"></div>Huissier de justice</div>
-</div>`;
-
-    // اربط القوالب بنوع الإجراء الأكثر عمومية (التبليغات) إن وُجد،
-    // وإلا فالنوع المفرد؛ النوع المفرد يبقى متطابقاً عبر فئة القالب (category).
-    const notifType =
-      get("SELECT id FROM procedure_types WHERE code = 'NOTIFICATIONS'") ||
-      get("SELECT id FROM procedure_types WHERE code = 'NOTIFICATION'");
-
-    const insertTemplate = (name, catCode, lang, content) => {
+    const insertTemplate = (name, catCode, typeId, lang, content) => {
       const tpl = run(
         `INSERT INTO document_templates (name, category_id, procedure_type_id, language, description, active, archived, current_version_id, created_by)
          VALUES (?,?,?,?,?,1,0,0,'admin')`,
-        [name, catIds[catCode], notifType ? notifType.id : null, lang, lang === 'ar'
-          ? 'نموذج محضر تبليغ تجريبي مع متغيرات ديناميكية'
-          : 'Modèle de procès-verbal de signification (démonstration avec variables dynamiques)']
+        [name, catIds[catCode], typeId || null, lang, lang === 'ar'
+          ? 'نموذج قانوني متخصص — بيانات ديناميكية تلقائية'
+          : 'Modèle juridique spécialisé — variables dynamiques automatiques']
       ).lastId;
       const ver = run(
         `INSERT INTO template_versions (template_id, version, content, variables, note, created_by) VALUES (?,?,?,?,?,?)`,
@@ -236,8 +227,769 @@ function seedTemplateLibrary({ get, run, tx }) {
       return tpl;
     };
 
-    insertTemplate('محضر تبليغ', 'NOTIFICATION', 'ar', arContent);
-    insertTemplate('Procès-verbal de signification', 'NOTIFICATION', 'fr', frContent);
+    /* ======================== 1. التبليغ (قضائي) ======================== */
+    insertTemplate('محضر تبليغ قضائي', 'NOTIFICATION', notifType ? notifType.id : null, 'ar', `
+<h2>محضر تبليغ قضائي</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>الهاتف</td><td>{{office_phone}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>نوع الملف</td><td>{{dossier_type}}</td></tr>
+  <tr><td>المدعي</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
+</table>
+
+<h4>بيانات التبليغ</h4>
+<table class="kv">
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+  <tr><td>نوع الإجراء</td><td>{{procedure_type}}</td></tr>
+  <tr><td>الوثيقة موضوع التبليغ</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>المطالِب</td><td>{{field.notif_obligee}}</td></tr>
+  <tr><td>المدين</td><td>{{field.notif_debtor}}</td></tr>
+  <tr><td>تاريخ التبليغ</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>ساعة التبليغ</td><td>{{field.notif_time}}</td></tr>
+  <tr><td>مكان التبليغ</td><td>{{field.notif_place}}</td></tr>
+  <tr><td>طريقة التبليغ</td><td>{{field.notif_method}}</td></tr>
+</table>
+
+<h4>الطرف المبلَّغ</h4>
+<table class="kv">
+  <tr><td>الاسم</td><td>{{party_name}}</td></tr>
+  <tr><td>رقم البطاقة الوطنية</td><td>{{party_cin}}</td></tr>
+  <tr><td>العنوان</td><td>{{party_address}}</td></tr>
+  <tr><td>الهاتف</td><td>{{party_phone}}</td></tr>
+</table>
+
+<h4>النتيجة</h4>
+<table class="kv">
+  <tr><td>نتيجة التبليغ</td><td>{{field.notif_result}}</td></tr>
+  <tr><td>الشهود</td><td>{{field.notif_witnesses}}</td></tr>
+</table>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالِب</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate('PV de signification judiciaire', 'NOTIFICATION', notifType ? notifType.id : null, 'fr', `
+<h2>PV de signification judiciaire</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>Téléphone</td><td>{{office_phone}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Type de dossier</td><td>{{dossier_type}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+</table>
+
+<h4>Détails de la signification</h4>
+<table class="kv">
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+  <tr><td>Type</td><td>{{procedure_type}}</td></tr>
+  <tr><td>Acte à notifier</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>Créancier</td><td>{{field.notif_obligee}}</td></tr>
+  <tr><td>Débiteur</td><td>{{field.notif_debtor}}</td></tr>
+  <tr><td>Date de signification</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>Heure</td><td>{{field.notif_time}}</td></tr>
+  <tr><td>Lieu</td><td>{{field.notif_place}}</td></tr>
+  <tr><td>Mode</td><td>{{field.notif_method}}</td></tr>
+</table>
+
+<h4>Partie signifiée</h4>
+<table class="kv">
+  <tr><td>Nom</td><td>{{party_name}}</td></tr>
+  <tr><td>CIN</td><td>{{party_cin}}</td></tr>
+  <tr><td>Adresse</td><td>{{party_address}}</td></tr>
+  <tr><td>Téléphone</td><td>{{party_phone}}</td></tr>
+</table>
+
+<h4>Résultat</h4>
+<table class="kv">
+  <tr><td>Résultat</td><td>{{field.notif_result}}</td></tr>
+  <tr><td>Témoins</td><td>{{field.notif_witnesses}}</td></tr>
+</table>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Créancier</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 2. تنفيذ الأحكام ======================== */
+    insertTemplate('محضر تنفيذ حكم', 'EXECUTION_JUGEMENTS', execJudType ? execJudType.id : null, 'ar', `
+<h2>محضر تنفيذ حكم قضائي</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات الحكم</h4>
+<table class="kv">
+  <tr><td>مرجع الحكم</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>المحكمة الصادرة عنها</td><td>{{field.exec_court}}</td></tr>
+  <tr><td>تاريخ الحكم</td><td>{{field.exec_judgment_date}}</td></tr>
+  <tr><td>المبلغ محل التنفيذ</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>مرحلة التنفيذ</td><td>{{field.exec_stage}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>المدعي (المطالب بالتنفيذ)</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه (المدين)</td><td>{{opponent_name}}</td></tr>
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>الإجراءات المنجزة</h4>
+<p style="white-space:pre-line;">{{field.exec_procedures}}</p>
+
+<h4>نتيجة التنفيذ</h4>
+<table class="kv">
+  <tr><td>النتيجة</td><td>{{field.exec_result}}</td></tr>
+  <tr><td>مصاريف التنفيذ</td><td>{{field.exec_expenses}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>ملاحظات</h4>
+<p style="white-space:pre-line;">{{field.exec_notes}}</p>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالب بالتنفيذ</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate("PV d'exécution de jugement", 'EXECUTION_JUGEMENTS', execJudType ? execJudType.id : null, 'fr', `
+<h2>PV d'exécution de jugement</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Référence du jugement</h4>
+<table class="kv">
+  <tr><td>Référence</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>Tribunal émetteur</td><td>{{field.exec_court}}</td></tr>
+  <tr><td>Date du jugement</td><td>{{field.exec_judgment_date}}</td></tr>
+  <tr><td>Montant à exécuter</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>Étape d'exécution</td><td>{{field.exec_stage}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>Procédures effectuées</h4>
+<p style="white-space:pre-line;">{{field.exec_procedures}}</p>
+
+<h4>Résultat</h4>
+<table class="kv">
+  <tr><td>Résultat</td><td>{{field.exec_result}}</td></tr>
+  <tr><td>Frais d'exécution</td><td>{{field.exec_expenses}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>Observations</h4>
+<p style="white-space:pre-line;">{{field.exec_notes}}</p>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Demandeur</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 3. تنفيذ الأوامر ======================== */
+    insertTemplate('محضر تنفيذ أمر قضائي', 'EXECUTION_ORDONNANCES', execOrdType ? execOrdType.id : null, 'ar', `
+<h2>محضر تنفيذ أمر قضائي</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات الأمر</h4>
+<table class="kv">
+  <tr><td>مرجع الأمر</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>المحكمة الصادرة عنها</td><td>{{field.exec_court}}</td></tr>
+  <tr><td>تاريخ الأمر</td><td>{{field.exec_date}}</td></tr>
+  <tr><td>المبلغ محل التنفيذ</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>المدعي (المطالب)</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>الإجراءات المنجزة</h4>
+<p style="white-space:pre-line;">{{field.exec_procedures}}</p>
+
+<h4>نتيجة التنفيذ</h4>
+<table class="kv">
+  <tr><td>النتيجة</td><td>{{field.exec_result}}</td></tr>
+  <tr><td>مصاريف التنفيذ</td><td>{{field.exec_expenses}} {{procedure_currency}}</td></tr>
+</table>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالب بالتنفيذ</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate("PV d'exécution d'ordonnance", 'EXECUTION_ORDONNANCES', execOrdType ? execOrdType.id : null, 'fr', `
+<h2>PV d'exécution d'ordonnance</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Référence de l'ordonnance</h4>
+<table class="kv">
+  <tr><td>Référence</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>Tribunal émetteur</td><td>{{field.exec_court}}</td></tr>
+  <tr><td>Date de l'ordonnance</td><td>{{field.exec_date}}</td></tr>
+  <tr><td>Montant à exécuter</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>Procédures effectuées</h4>
+<p style="white-space:pre-line;">{{field.exec_procedures}}</p>
+
+<h4>Résultat</h4>
+<table class="kv">
+  <tr><td>Résultat</td><td>{{field.exec_result}}</td></tr>
+  <tr><td>Frais d'exécution</td><td>{{field.exec_expenses}} {{procedure_currency}}</td></tr>
+</table>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Demandeur</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 4. القيام بعمل ======================== */
+    insertTemplate('محضر القيام بعمل', 'FAIRE', faireType ? faireType.id : null, 'ar', `
+<h2>محضر القيام بعمل</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>وصف العمل المطلوب</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.action_desc}}</p>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>المدعي</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+  <tr><td>نوع الإجراء</td><td>{{procedure_type}}</td></tr>
+</table>
+
+<h4>تفاصيل التنفيذ</h4>
+<table class="kv">
+  <tr><td>مكان التنفيذ</td><td>{{field.faire_location}}</td></tr>
+  <tr><td>الموعد النهائي</td><td>{{field.faire_deadline}}</td></tr>
+  <tr><td>تكلفة العمل</td><td>{{field.faire_costs}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>نتيجة التنفيذ</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.faire_result}}</p>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالب بالعمل</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate('PV de faire', 'FAIRE', faireType ? faireType.id : null, 'fr', `
+<h2>PV de faire</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Description de l'acte demandé</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.action_desc}}</p>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+  <tr><td>Type</td><td>{{procedure_type}}</td></tr>
+</table>
+
+<h4>Détails d'exécution</h4>
+<table class="kv">
+  <tr><td>Lieu d'exécution</td><td>{{field.faire_location}}</td></tr>
+  <tr><td>Délai limite</td><td>{{field.faire_deadline}}</td></tr>
+  <tr><td>Coût</td><td>{{field.faire_costs}} {{procedure_currency}}</td></tr>
+</table>
+
+<h4>Résultat</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.faire_result}}</p>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Demandeur</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 5. تبليغ وتنفيذ ======================== */
+    insertTemplate('محضر تبليغ وتنفيذ', 'NOTIFICATION_EXECUTION', notifExecType ? notifExecType.id : null, 'ar', `
+<h2>محضر تبليغ وتنفيذ</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>المدعي</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>المرحلة الأولى: التبليغ</h4>
+<table class="kv">
+  <tr><td>الوثيقة موضوع التبليغ</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>مرجع الحكم/القرار</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>تاريخ التبليغ</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>طريقة التبليغ</td><td>{{field.notif_method}}</td></tr>
+  <tr><td>نتيجة التبليغ</td><td>{{field.notif_result}}</td></tr>
+</table>
+<table class="kv">
+  <tr><td>الطرف المبلَّغ</td><td>{{party_name}}</td></tr>
+  <tr><td>رقم البطاقة الوطنية</td><td>{{party_cin}}</td></tr>
+  <tr><td>العنوان</td><td>{{party_address}}</td></tr>
+</table>
+
+<h4>المرحلة الثانية: التنفيذ</h4>
+<table class="kv">
+  <tr><td>المبلغ محل التنفيذ</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>إجراءات التنفيذ المنجزة</td><td>{{field.exec_procedures}}</td></tr>
+  <tr><td>نتيجة التنفيذ</td><td>{{field.exec_result}}</td></tr>
+</table>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالب بالتنفيذ</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate('PV de notification et exécution', 'NOTIFICATION_EXECUTION', notifExecType ? notifExecType.id : null, 'fr', `
+<h2>PV de notification et exécution</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+</table>
+
+<h4>Phase 1 : Signification</h4>
+<table class="kv">
+  <tr><td>Acte à notifier</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>Référence</td><td>{{field.title_ref}}</td></tr>
+  <tr><td>Date</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>Mode</td><td>{{field.notif_method}}</td></tr>
+  <tr><td>Résultat</td><td>{{field.notif_result}}</td></tr>
+</table>
+<table class="kv">
+  <tr><td>Partie signifiée</td><td>{{party_name}}</td></tr>
+  <tr><td>CIN</td><td>{{party_cin}}</td></tr>
+  <tr><td>Adresse</td><td>{{party_address}}</td></tr>
+</table>
+
+<h4>Phase 2 : Exécution</h4>
+<table class="kv">
+  <tr><td>Montant</td><td>{{field.exec_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>Procédures</td><td>{{field.exec_procedures}}</td></tr>
+  <tr><td>Résultat</td><td>{{field.exec_result}}</td></tr>
+</table>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Demandeur</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 6. التبليغات المباشرة ======================== */
+    insertTemplate('محضر تبليغ مباشر', 'NOTIFICATIONS', notifsType ? notifsType.id : null, 'ar', `
+<h2>محضر تبليغ مباشر</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات التبليغ</h4>
+<table class="kv">
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+  <tr><td>الوثيقة موضوع التبليغ</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>تاريخ التبليغ</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>مكان التبليغ</td><td>{{field.notif_place}}</td></tr>
+  <tr><td>طريقة التبليغ</td><td>{{field.notif_method}}</td></tr>
+  <tr><td>نتيجة التبليغ</td><td>{{field.notif_result}}</td></tr>
+</table>
+
+<h4>الطرف المبلَّغ</h4>
+<table class="kv">
+  <tr><td>الاسم</td><td>{{party_name}}</td></tr>
+  <tr><td>رقم البطاقة الوطنية</td><td>{{party_cin}}</td></tr>
+  <tr><td>العنوان</td><td>{{party_address}}</td></tr>
+  <tr><td>الهاتف</td><td>{{party_phone}}</td></tr>
+</table>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المطالِب</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate('PV de notification directe', 'NOTIFICATIONS', notifsType ? notifsType.id : null, 'fr', `
+<h2>PV de notification directe</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Détails de la notification</h4>
+<table class="kv">
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+  <tr><td>Acte à notifier</td><td>{{field.act_to_notify}}</td></tr>
+  <tr><td>Date</td><td>{{field.notif_date}}</td></tr>
+  <tr><td>Lieu</td><td>{{field.notif_place}}</td></tr>
+  <tr><td>Mode</td><td>{{field.notif_method}}</td></tr>
+  <tr><td>Résultat</td><td>{{field.notif_result}}</td></tr>
+</table>
+
+<h4>Partie signifiée</h4>
+<table class="kv">
+  <tr><td>Nom</td><td>{{party_name}}</td></tr>
+  <tr><td>CIN</td><td>{{party_cin}}</td></tr>
+  <tr><td>Adresse</td><td>{{party_address}}</td></tr>
+  <tr><td>Téléphone</td><td>{{party_phone}}</td></tr>
+</table>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Créancier</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 7. المعاينات ======================== */
+    insertTemplate('محضر معاينة', 'CONSTATATIONS', constatType ? constatType.id : null, 'ar', `
+<h2>محضر معاينة</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات المعاينة</h4>
+<table class="kv">
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+  <tr><td>موضوع المعاينة</td><td>{{field.constat_object}}</td></tr>
+  <tr><td>تاريخ المعاينة</td><td>{{field.constat_date}}</td></tr>
+  <tr><td>مكان المعاينة</td><td>{{field.constat_place}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+  <tr><td>المدعي</td><td>{{applicant_name}}</td></tr>
+  <tr><td>المدعى عليه</td><td>{{opponent_name}}</td></tr>
+</table>
+
+<h4>الحاضرون</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_attendees}}</p>
+
+<h4>الوقائع المعاينة</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_facts}}</p>
+
+<h4>المرفقات</h4>
+<p style="white-space:pre-line;">{{field.constat_attachments}}</p>
+
+<h4>عدد الصور المحصلة</h4>
+<p>{{field.constat_photos}} صورة</p>
+
+<h4>النتيجة والتراتيب</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_result}}</p>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>أطراف المعاينة</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate('PV de constat', 'CONSTATATIONS', constatType ? constatType.id : null, 'fr', `
+<h2>PV de constat</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Objet du constat</h4>
+<table class="kv">
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+  <tr><td>Objet</td><td>{{field.constat_object}}</td></tr>
+  <tr><td>Date</td><td>{{field.constat_date}}</td></tr>
+  <tr><td>Lieu</td><td>{{field.constat_place}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+  <tr><td>Demandeur</td><td>{{applicant_name}}</td></tr>
+  <tr><td>Défendeur</td><td>{{opponent_name}}</td></tr>
+</table>
+
+<h4>Personnes présentes</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_attendees}}</p>
+
+<h4>Faits constatés</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_facts}}</p>
+
+<h4>Pièces jointes</h4>
+<p style="white-space:pre-line;">{{field.constat_attachments}}</p>
+
+<h4>Nombre de photos</h4>
+<p>{{field.constat_photos}} photos</p>
+
+<h4>Résultat et dispositions</h4>
+<p style="white-space:pre-line;border:1px solid #ddd;padding:10px;background:#f9f9f9;">{{field.constat_result}}</p>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Parties au constat</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
+
+    /* ======================== 8. العرض العيني ======================== */
+    insertTemplate('محضر عرض عيني', 'OFFRE_REELLE', offreType ? offreType.id : null, 'ar', `
+<h2>محضر عرض عيني</h2>
+<p style="text-align:center;color:#555;">المؤرخ في {{today_date}} — المكتب: {{office_name}}</p>
+
+<h4>بيانات المكتب</h4>
+<table class="kv">
+  <tr><td>المفوض القضائي</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>اسم المكتب</td><td>{{office_name}}</td></tr>
+  <tr><td>العنوان</td><td>{{office_address}}</td></tr>
+  <tr><td>رقم الترسيم</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>بيانات العرض</h4>
+<table class="kv">
+  <tr><td>رقم الإجراء</td><td>{{procedure_number}}</td></tr>
+  <tr><td>المبلغ المعروض</td><td>{{field.offered_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>تاريخ العرض</td><td>{{field.offer_date}}</td></tr>
+  <tr><td>سبب العرض</td><td>{{field.offer_purpose}}</td></tr>
+</table>
+
+<h4>بيانات الملف</h4>
+<table class="kv">
+  <tr><td>رقم الملف</td><td>{{dossier_number}}</td></tr>
+  <tr><td>المحكمة</td><td>{{dossier_court}}</td></tr>
+</table>
+
+<h4>أطراف العرض</h4>
+<table class="kv">
+  <tr><td>المدين المعروض</td><td>{{field.offer_debtor}}</td></tr>
+  <tr><td>دائن المبلغ</td><td>{{field.offer_creditor}}</td></tr>
+</table>
+
+<h4>الشهود</h4>
+<p>{{field.offer_witnesses}}</p>
+
+<h4>موقف الدائن من العرض</h4>
+<table class="kv">
+  <tr><td>النتيجة</td><td>{{field.offer_acceptance}}</td></tr>
+</table>
+
+<h4>ملاحظات</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>المدين المعروض</div>
+  <div class="col"><div class="line"></div>المفوض القضائي<br><span style="font-size:10px;">{{office_name}} — ختم المكتب</span></div>
+</div>`);
+
+    insertTemplate("PV d'offre réelle", 'OFFRE_REELLE', offreType ? offreType.id : null, 'fr', `
+<h2>PV d'offre réelle</h2>
+<p style="text-align:center;color:#555;">Fait le {{today_date}} — Cabinet : {{office_name}}</p>
+
+<h4>Identification du cabinet</h4>
+<table class="kv">
+  <tr><td>Huissier de justice</td><td>{{commissioner_name}}</td></tr>
+  <tr><td>Nom du cabinet</td><td>{{office_name}}</td></tr>
+  <tr><td>Adresse</td><td>{{office_address}}</td></tr>
+  <tr><td>N° d'immatriculation</td><td>{{office_registration_number}}</td></tr>
+</table>
+
+<h4>Détails de l'offre</h4>
+<table class="kv">
+  <tr><td>N° procédure</td><td>{{procedure_number}}</td></tr>
+  <tr><td>Montant offert</td><td>{{field.offered_amount}} {{procedure_currency}}</td></tr>
+  <tr><td>Date</td><td>{{field.offer_date}}</td></tr>
+  <tr><td>Motif</td><td>{{field.offer_purpose}}</td></tr>
+</table>
+
+<h4>Référence du dossier</h4>
+<table class="kv">
+  <tr><td>N° dossier</td><td>{{dossier_number}}</td></tr>
+  <tr><td>Tribunal</td><td>{{dossier_court}}</td></tr>
+</table>
+
+<h4>Parties</h4>
+<table class="kv">
+  <tr><td>Débiteur offrant</td><td>{{field.offer_debtor}}</td></tr>
+  <tr><td>Créancier</td><td>{{field.offer_creditor}}</td></tr>
+</table>
+
+<h4>Témoins</h4>
+<p>{{field.offer_witnesses}}</p>
+
+<h4>Réponse du créancier</h4>
+<table class="kv">
+  <tr><td>Décision</td><td>{{field.offer_acceptance}}</td></tr>
+</table>
+
+<h4>Observations</h4>
+<p>{{procedure_notes}}</p>
+
+<div class="sig">
+  <div class="col"><div class="line"></div>Débiteur offrant</div>
+  <div class="col"><div class="line"></div>Huissier de justice<br><span style="font-size:10px;">{{office_name}} — Sceau du cabinet</span></div>
+</div>`);
   });
 }
 
