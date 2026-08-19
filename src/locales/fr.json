@@ -123,6 +123,7 @@
     "add": "Nouveau PV",
     "filter": "Filtrer",
     "filterAll": "Tous les statuts",
+    "filterAllTypes": "Tous les types",
     "filterStatus": "Statut",
     "empty": "Aucun procès-verbal.",
     "emptyHint": "Créez un PV à partir d'une procédure.",

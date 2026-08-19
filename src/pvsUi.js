@@ -73,9 +73,13 @@
       S.types = await API.pvTypes();
     } catch (e) { S.types = []; }
     try {
+      S.transitions = await API.pvTransitions();
+    } catch (e) { S.transitions = []; }
+    try {
       S.canDelete = await API.authIsAuthorized('pv.delete');
     } catch (e) { S.canDelete = false; }
     buildStatusSelect();
+    buildTypeSelect();
     if (!bound) { bindEvents(); bound = true; }
   }
 
@@ -86,6 +90,16 @@
       S.statuses.map((s) => {
         const label = state.lang === 'fr' ? s.name_fr : s.name_ar;
         return `<option value="${esc(s.code)}" ${s.code === S.status ? 'selected' : ''}>${esc(label)}</option>`;
+      }).join('');
+  }
+
+  function buildTypeSelect() {
+    const sel = byId('pv-filter-type');
+    if (!sel) return;
+    sel.innerHTML = `<option value="">${esc(state.lang === 'fr' ? 'Tous les types' : 'جميع الأنواع')}</option>` +
+      S.types.map((tp) => {
+        const label = state.lang === 'fr' ? tp.name_fr : tp.name_ar;
+        return `<option value="${tp.id}" ${String(tp.id) === String(S.typeId) ? 'selected' : ''}>${esc(label)}</option>`;
       }).join('');
   }
 
@@ -237,8 +251,11 @@
           <strong>${esc(proc.procedure_number)}</strong> — ${esc(proc.dossier ? proc.dossier.numero : '')} — ${esc(proc.dossier ? proc.dossier.demandeur : '')}
         </div>`;
 
-      const typeOpts = S.types.map((tp) =>
-        `<option value="${tp.id}" ${S.types[0] && tp.id === S.types[0].id ? 'selected' : ''}>${esc(state.lang === 'fr' ? tp.name_fr : tp.name_ar)}</option>`).join('');
+      const typeOpts = S.types.map((tp) => {
+        const inferred = inferPvType(proc.type ? proc.type.code : null);
+        const selected = inferred && tp.id === inferred.id ? 'selected' : S.types[0] && tp.id === S.types[0].id ? 'selected' : '';
+        return `<option value="${tp.id}" ${selected}>${esc(state.lang === 'fr' ? tp.name_fr : tp.name_ar)}</option>`;
+      }).join('');
       byId('pv-create-type-wrap').innerHTML = `<div class="form-field">${state.lang === 'fr' ? 'Type de PV' : 'نوع المحضر'}<select class="form-input" id="pv-create-type">${typeOpts}</select></div>`;
 
       const tplOpts = createState.templates.length
@@ -350,7 +367,29 @@
   function infoHtml(pv) {
     const proc = pv.procedure || {};
     const d = proc.dossier || {};
+    const steps = ['DRAFT', 'IN_REVIEW', 'FINALIZED', 'ARCHIVED'];
+    const stepIdx = steps.indexOf(pv.status);
+    const lifecycleHtml = pv.status !== 'CANCELLED' ? `
+      <div class="pv-lifecycle" style="display:flex;align-items:center;gap:0;margin:16px 0;padding:12px 16px;background:var(--bg);border-radius:8px">
+        ${steps.map((s, i) => {
+          const st = statusOf(s);
+          const label = st ? (state.lang === 'fr' ? st.name_fr : st.name_ar) : s;
+          const done = i <= stepIdx;
+          const current = i === stepIdx;
+          return `<div style="flex:1;text-align:center;position:relative">
+            <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:.8em;font-weight:700;
+              background:${current ? 'var(--primary)' : done ? 'var(--success)' : 'var(--border)'};
+              color:${done ? '#fff' : 'var(--muted)'}">${i + 1}</div>
+            <div style="font-size:.7em;color:${current ? 'var(--primary)' : done ? 'var(--text)' : 'var(--muted)'};font-weight:${current ? '700' : '400'}">${esc(label)}</div>
+          </div>${i < steps.length - 1 ? `<div style="flex:0.5;height:2px;background:${i < stepIdx ? 'var(--success)' : 'var(--border)'}"></div>` : ''}`;
+        }).join('')}
+      </div>` : '';
+
     return `
+      <div style="text-align:right;margin-bottom:8px">
+        <button class="btn btn-sm btn-ghost" data-pv-edit-meta="${pv.id}"><i class="fas fa-pen"></i> ${state.lang === 'fr' ? 'Modifier' : 'تعديل البيانات'}</button>
+      </div>
+      ${lifecycleHtml}
       <table class="kv-table">
         ${kv(state.lang === 'fr' ? 'N° PV' : 'رقم المحضر', `<strong>${esc(pv.pv_number)}</strong>`)}
         ${kv(state.lang === 'fr' ? 'Titre' : 'العنوان', esc(pv.title))}
@@ -361,6 +400,8 @@
         ${kv(state.lang === 'fr' ? 'Dossier' : 'الملف', esc(d.numero || '—') + (d.demandeur ? '<br><small>' + esc(d.demandeur) + '</small>' : ''))}
         ${kv(state.lang === 'fr' ? 'Tribunal' : 'المحكمة', esc(d.court || ''))}
         ${kv(state.lang === 'fr' ? 'Modèle' : 'القالب', pv.template_version_id ? '#' + pv.template_version_id : '—')}
+        ${kv(state.lang === 'fr' ? 'Version' : 'الإصدار', `v${pv.versions.length || 1}`)}
+        ${kv(state.lang === 'fr' ? 'Copies' : 'النظائر', `${pv.copies.length} ${state.lang === 'fr' ? 'copie(s)' : 'نظائر'}`)}
         ${kv(state.lang === 'fr' ? 'Créé le' : 'تاريخ الإنشاء', fmtDate(pv.created_at) + ' — ' + esc(pv.created_by))}
         ${pv.finalized_at ? kv(state.lang === 'fr' ? 'Finalisé' : 'مُنهى', fmtDate(pv.finalized_at) + ' — ' + esc(pv.finalized_by)) : ''}
         ${pv.archived_at ? kv(state.lang === 'fr' ? 'Archivé' : 'مؤرشف', fmtDate(pv.archived_at) + ' — ' + esc(pv.archived_by)) : ''}
@@ -461,17 +502,24 @@
 
   function footerActions(pv) {
     const btns = [];
-    if (pv.status === 'DRAFT') {
-      btns.push(`<button class="btn btn-primary" data-pv-status="IN_REVIEW"><i class="fas fa-magnifying-glass"></i> ${state.lang === 'fr' ? 'Envoyer en revue' : 'إرسال للمراجعة'}</button>`);
-      btns.push(`<button class="btn btn-ghost danger" data-pv-status="CANCELLED"><i class="fas fa-ban"></i> ${state.lang === 'fr' ? 'Annuler' : 'إلغاء'}</button>`);
-    } else if (pv.status === 'IN_REVIEW') {
-      btns.push(`<button class="btn btn-ghost" data-pv-status="DRAFT"><i class="fas fa-arrow-rotate-left"></i> ${state.lang === 'fr' ? 'Retour brouillon' : 'رجوع للمسودة'}</button>`);
-      btns.push(`<button class="btn btn-success" data-pv-finalize="${pv.id}"><i class="fas fa-file-pdf"></i> ${state.lang === 'fr' ? 'Finaliser + PDF' : 'إنهاء وتوليد PDF'}</button>`);
-      btns.push(`<button class="btn btn-ghost danger" data-pv-status="CANCELLED"><i class="fas fa-ban"></i> ${state.lang === 'fr' ? 'Annuler' : 'إلغاء'}</button>`);
-    } else if (pv.status === 'FINALIZED') {
-      btns.push(`<button class="btn btn-primary" data-pv-status="ARCHIVED"><i class="fas fa-box-archive"></i> ${state.lang === 'fr' ? 'Archiver' : 'أرشفة'}</button>`);
-      btns.push(`<button class="btn btn-ghost danger" data-pv-status="CANCELLED"><i class="fas fa-ban"></i> ${state.lang === 'fr' ? 'Annuler' : 'إلغاء'}</button>`);
+    const transitions = S.transitions || [];
+    const allowed = transitions.filter((tr) => tr.from_status === pv.status);
+
+    if (pv.status === 'DRAFT' || pv.status === 'IN_REVIEW') {
+      const hasFinalize = allowed.some((tr) => tr.to_status === 'FINALIZED');
+      if (hasFinalize) {
+        btns.push(`<button class="btn btn-success" data-pv-finalize="${pv.id}"><i class="fas fa-file-pdf"></i> ${state.lang === 'fr' ? 'Finaliser + PDF' : 'إنهاء وتوليد PDF'}</button>`);
+      }
     }
+
+    allowed.forEach((tr) => {
+      const st = statusOf(tr.to_status);
+      const label = st ? (state.lang === 'fr' ? st.name_fr : st.name_ar) : tr.to_status;
+      const isDanger = tr.to_status === 'CANCELLED';
+      const icon = tr.to_status === 'IN_REVIEW' ? 'fa-magnifying-glass' : tr.to_status === 'DRAFT' ? 'fa-arrow-rotate-left' : tr.to_status === 'ARCHIVED' ? 'fa-box-archive' : tr.to_status === 'FINALIZED' ? 'fa-file-pdf' : 'fa-ban';
+      btns.push(`<button class="btn ${isDanger ? 'btn-ghost danger' : 'btn-primary'}" data-pv-status="${tr.to_status}"><i class="fas ${icon}"></i> ${esc(label)}</button>`);
+    });
+
     btns.push(`<button class="btn btn-ghost" data-pv-close-detail><i class="fas fa-xmark"></i> ${state.lang === 'fr' ? 'Fermer' : 'إغلاق'}</button>`);
     return btns.join('');
   }
@@ -573,6 +621,11 @@
         }
       });
     });
+    body.querySelectorAll('[data-pv-edit-meta]').forEach((b) => {
+      b.addEventListener('click', () => {
+        if (S.current) openEditMetaModal(S.current);
+      });
+    });
     body.querySelectorAll('[data-goto-proc]').forEach((b) => {
       b.addEventListener('click', (e) => {
         e.preventDefault();
@@ -581,6 +634,72 @@
         if (window.ProceduresModule) window.ProceduresModule.openDetail(Number(b.getAttribute('data-goto-proc')));
       });
     });
+  }
+
+  /* ================================================================
+     تعديل metadata المحضر
+     ================================================================ */
+  function openEditMetaModal(pv) {
+    const { modal, openModal, closeModal } = window.HuissierApp;
+    const l = (ar, fr) => (state.lang === 'ar' ? ar : fr);
+    modal.title.textContent = l('تعديل بيانات المحضر', 'Modifier les métadonnées du PV');
+    const typeOpts = S.types.map((tp) =>
+      `<option value="${tp.id}" ${tp.id === pv.pv_type_id ? 'selected' : ''}>${esc(state.lang === 'fr' ? tp.name_fr : tp.name_ar)}</option>`).join('');
+    modal.body.innerHTML = `
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-field"><label>${l('العنوان', 'Titre')}</label>
+          <input class="form-input" id="pv-meta-title" type="text" value="${esc(pv.title || '')}"></div>
+        <div class="form-field"><label>${l('نوع المحضر', 'Type de PV')}</label>
+          <select class="form-input" id="pv-meta-type"><option value="">—</option>${typeOpts}</select></div>
+        <div class="form-field"><label>${l('اللغة', 'Langue')}</label>
+          <select class="form-input" id="pv-meta-lang">
+            <option value="ar" ${pv.language === 'ar' ? 'selected' : ''}>${l('العربية', 'Arabe')}</option>
+            <option value="fr" ${pv.language === 'fr' ? 'selected' : ''}>${l('الفرنسية', 'Français')}</option>
+          </select></div>
+        <div class="form-field"><label>${l('ملاحظات', 'Notes')}</label>
+          <textarea class="form-input" id="pv-meta-notes" rows="3">${esc(pv.notes || '')}</textarea></div>
+      </div>`;
+    modal.footer.innerHTML = `
+      <button class="btn btn-ghost" data-modal-cancel>${t('common.cancel')}</button>
+      <button class="btn btn-primary" data-modal-ok>${t('common.save')}</button>`;
+    openModal();
+    modal.footer.querySelector('[data-modal-cancel]').addEventListener('click', closeModal);
+    modal.footer.querySelector('[data-modal-ok]').addEventListener('click', async () => {
+      try {
+        const result = await API.pvUpdateMeta(pv.id, {
+          title: byId('pv-meta-title').value.trim(),
+          pv_type_id: Number(byId('pv-meta-type').value) || null,
+          notes: byId('pv-meta-notes').value.trim()
+        });
+        S.current = result || await API.pvGet(pv.id);
+        closeModal();
+        toast(t('common.save'));
+        byId('pv-detail-title').textContent = S.current.pv_number + ' — ' + (S.current.title || '');
+        renderDetailTabs();
+        renderDetailTab();
+        render();
+      } catch (e) { toast(e.message, true); }
+    });
+  }
+
+  /* ================================================================
+     ربط نوع الإجراء بالقالب تلقائياً
+     ================================================================ */
+  const PV_TYPE_MAP = {
+    NOTIFICATION: 'NOTIFICATION',
+    EXECUTION_JUGEMENTS: 'EXECUTION',
+    EXECUTION_ORDONNANCES: 'EXECUTION',
+    FAIRE: 'GENERAL',
+    NOTIFICATION_EXECUTION: 'NOTIFICATION',
+    NOTIFICATIONS: 'NOTIFICATION',
+    CONSTATATIONS: 'CONSTATATION',
+    OFFRE_REELLE: 'GENERAL'
+  };
+
+  function inferPvType(procedureTypeCode) {
+    if (!procedureTypeCode) return null;
+    const pvCode = PV_TYPE_MAP[procedureTypeCode] || 'GENERAL';
+    return S.types.find((tp) => tp.code === pvCode) || null;
   }
 
   /* ================================================================
@@ -694,7 +813,12 @@
     });
     byId('pv-filter-status').addEventListener('change', (e) => {
       S.status = e.target.value;
-      byId('pv-filter-chip').hidden = !S.status;
+      byId('pv-filter-chip').hidden = !S.status && !S.typeId;
+      loadList(false);
+    });
+    byId('pv-filter-type').addEventListener('change', (e) => {
+      S.typeId = e.target.value;
+      byId('pv-filter-chip').hidden = !S.status && !S.typeId;
       loadList(false);
     });
     byId('pv-filter').addEventListener('click', () => {
@@ -704,6 +828,7 @@
       S.status = '';
       S.typeId = '';
       byId('pv-filter-status').value = '';
+      byId('pv-filter-type').value = '';
       byId('pv-filter-chip').hidden = true;
       loadList(false);
     });

@@ -123,6 +123,7 @@
     "add": "محضر جديد",
     "filter": "تصفية",
     "filterAll": "جميع الحالات",
+    "filterAllTypes": "جميع الأنواع",
     "filterStatus": "الحالة",
     "empty": "لا توجد محاضر.",
     "emptyHint": "ابدأ بإنشاء محضر من إجراء.",
