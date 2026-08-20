@@ -54,7 +54,9 @@ function restore(app, name, dbPath) {
 function restoreFromBuffer(app, buffer, name, dbPath) {
   fs.writeFileSync(dbPath, Buffer.from(buffer));
   const dir = getBackupDir(app);
-  const dest = path.join(dir, name || 'restore.db');
+  const safeName = (name || 'restore.db').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const dest = path.join(dir, safeName);
+  if (!dest.startsWith(dir)) throw new Error('INVALID_PATH');
   fs.copyFileSync(dbPath, dest);
   return true;
 }

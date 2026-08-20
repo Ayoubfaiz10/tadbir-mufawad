@@ -592,6 +592,7 @@ html[dir="rtl"] .toast { animation-name: slideInRtl; }
   .sidebar.open { transform: translateX(0); }
   .form-grid { grid-template-columns: 1fr; }
   .page { padding: 16px; }
+  .data-table, .reg-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 
 /* ================================================================
@@ -1242,3 +1243,16 @@ input, select, textarea, button, a { scroll-margin-top: 90px; }
 .row-deleted { opacity: .55; text-decoration: line-through; }
 
 .compact td, .compact th { padding: 6px 10px; font-size: .8rem; }
+
+/* ---------- Print ---------- */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .sidebar, .topbar, .nav-btn, .btn, .toast-container, .modal, .modal-backdrop { display: none !important; }
+  .main { margin: 0 !important; padding: 12px !important; }
+  .card { border: 1px solid #ccc !important; box-shadow: none !important; background: #fff !important; break-inside: avoid; }
+  .data-table, .reg-table { font-size: 11pt !important; }
+  .data-table th, .data-table td, .reg-table th, .reg-table td { padding: 5px 8px !important; border: 1px solid #ccc !important; }
+  .badge { border: 1px solid #999 !important; }
+  a { color: #000 !important; text-decoration: underline !important; }
+  .page { display: block !important; }
+}

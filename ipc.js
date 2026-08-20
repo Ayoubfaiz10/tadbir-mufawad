@@ -47,8 +47,16 @@ function int(v) {
   const n = parseInt(v, 10);
   return Number.isInteger(n) ? n : 0;
 }
+const PUBLIC_CHANNELS = new Set([
+  'app:getLocale', 'auth:login', 'auth:setupInitial', 'auth:isAuthorized',
+  'auth:current', 'config:snapshot'
+]);
 function genHandle(channel, fn) {
   ipcMain.handle(channel, async (event, ...args) => {
+    if (!PUBLIC_CHANNELS.has(channel)) {
+      const sess = session.get(event.sender.id);
+      if (!sess || sess.expired) return { ok: false, error: 'UNAUTHORIZED' };
+    }
     try {
       return { ok: true, data: await fn(...args) };
     } catch (e) {

@@ -1036,24 +1036,24 @@ function buildRegisterHtml(register, rows, opts = {}) {
       if (isAcc) {
         const amt = (Number(r.amount) || 0).toLocaleString();
         return `<tr>
-          <td>${r.serial_no}</td>
-          <td>${r.reference || '—'}</td>
-          <td>${r.procedure_number || '—'}</td>
-          <td>${r.dossier_number || '—'}</td>
-          <td class="num">${amt} ${r.currency || 'MAD'}${r.flow_type === 'refund' ? ' (' + (ar ? 'استرداد' : 'remboursement') + ')' : ''}</td>
-          <td>${r.receipt_number || r.rc_receipt_number || '—'}</td>
-          <td>${r.amount_text || note || '—'}</td>
-          <td>${st}</td>
+          <td>${escapeHtml(String(r.serial_no))}</td>
+          <td>${escapeHtml(r.reference || '—')}</td>
+          <td>${escapeHtml(r.procedure_number || '—')}</td>
+          <td>${escapeHtml(r.dossier_number || '—')}</td>
+          <td class="num">${amt} ${escapeHtml(r.currency || 'MAD')}${r.flow_type === 'refund' ? ' (' + (ar ? 'استرداد' : 'remboursement') + ')' : ''}</td>
+          <td>${escapeHtml(r.receipt_number || r.rc_receipt_number || '—')}</td>
+          <td>${escapeHtml(r.amount_text || note || '—')}</td>
+          <td>${escapeHtml(st)}</td>
         </tr>`;
       }
       return `<tr>
-        <td>${r.serial_no}</td>
-        <td>${r.procedure_number || r.procedure_number_snapshot || '—'}</td>
-        <td>${r.dossier_number || '—'}</td>
-        <td>${ar ? (r.type_name_ar || r.type_name_fr) : (r.type_name_fr || r.type_name_ar) || '—'}</td>
-        <td>${r.parties_summary || '—'}</td>
-        <td>${r.pv_number || '—'}</td>
-        <td>${st}${note ? '<br><small>' + note + '</small>' : ''}</td>
+        <td>${escapeHtml(String(r.serial_no))}</td>
+        <td>${escapeHtml(r.procedure_number || r.procedure_number_snapshot || '—')}</td>
+        <td>${escapeHtml(r.dossier_number || '—')}</td>
+        <td>${escapeHtml(ar ? (r.type_name_ar || r.type_name_fr) : (r.type_name_fr || r.type_name_ar) || '—')}</td>
+        <td>${escapeHtml(r.parties_summary || '—')}</td>
+        <td>${escapeHtml(r.pv_number || '—')}</td>
+        <td>${escapeHtml(st)}${note ? '<br><small>' + escapeHtml(note) + '</small>' : ''}</td>
       </tr>`;
     }).join('');
     const totals = isAcc
