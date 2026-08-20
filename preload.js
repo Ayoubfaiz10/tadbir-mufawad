@@ -32,7 +32,13 @@ contextBridge.exposeInMainWorld('appAPI', {
   // الملفات والأطراف
   dossierSearch: expose('app:dossierSearch'),
   dossierParties: expose('app:dossierParties'),
+  dossierDetail: expose('app:dossierDetail'),
   partySave: expose('app:partySave'),
+  partyDelete: expose('app:partyDelete'),
+  partyLinkClient: expose('app:partyLinkClient'),
+  clientDetail: expose('app:clientDetail'),
+  clientSearch: expose('app:clientSearch'),
+  clientFindByCin: expose('app:clientFindByCin'),
 
   // التوثيق
   authLogin: expose('auth:login'),

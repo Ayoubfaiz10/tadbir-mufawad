@@ -5,7 +5,7 @@
    Migrations خطية بترتيب إضافة.
    ================================================================ */
 
-const VERSION = 10;
+const VERSION = 11;
 
 const MIGRATIONS = [
   {
@@ -1041,6 +1041,14 @@ const MIGRATIONS = [
 
       ALTER TABLE procedures ADD COLUMN current_stage TEXT NOT NULL DEFAULT 'RECEPTION';
       ALTER TABLE procedures ADD COLUMN workflow_completed_at TEXT;
+    `
+  },
+  {
+    version: 11,
+    up: `
+      -- ربط الأطراف بالعملاء
+      ALTER TABLE parties ADD COLUMN client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS idx_parties_client ON parties(client_id);
     `
   }
 ];

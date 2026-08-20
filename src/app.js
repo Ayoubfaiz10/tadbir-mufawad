@@ -199,7 +199,7 @@
 
     document.getElementById('dossier-tbody').innerHTML = rows.length
       ? rows.map((d) => `
-        <tr>
+        <tr class="clickable-row" data-dos-detail="${d.id}">
           <td><strong>${escapeHtml(d.numero || '—')}</strong></td>
           <td>${escapeHtml(d.demandeur || '')}</td>
           <td>${escapeHtml(d.defendeur || '')}</td>
@@ -253,7 +253,7 @@
 
     document.getElementById('client-tbody').innerHTML = rows.length
       ? rows.map((c) => `
-        <tr>
+        <tr class="clickable-row" data-cli-detail="${c.id}">
           <td><strong>${escapeHtml(c.name || '')}</strong></td>
           <td>${escapeHtml(c.phone || '—')}</td>
           <td>${escapeHtml(c.email || '—')}</td>
@@ -477,6 +477,12 @@
 
   /* ---------- ربط أحداث الصفوف ---------- */
   function bindDossierRowActions() {
+    document.querySelectorAll('[data-dos-detail]').forEach((tr) => {
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('[data-dos-edit]') || e.target.closest('[data-dos-del]')) return;
+        openDossierDetail(Number(tr.getAttribute('data-dos-detail')));
+      });
+    });
     document.querySelectorAll('[data-dos-edit]').forEach((b) => {
       b.addEventListener('click', () => {
         const item = state.dossiers.find((d) => d.id === Number(b.getAttribute('data-dos-edit')));
@@ -495,6 +501,12 @@
   }
 
   function bindClientRowActions() {
+    document.querySelectorAll('[data-cli-detail]').forEach((tr) => {
+      tr.addEventListener('click', (e) => {
+        if (e.target.closest('[data-cli-edit]') || e.target.closest('[data-cli-del]')) return;
+        openClientDetail(Number(tr.getAttribute('data-cli-detail')));
+      });
+    });
     document.querySelectorAll('[data-cli-edit]').forEach((b) => {
       b.addEventListener('click', () => {
         const item = state.clients.find((c) => c.id === Number(b.getAttribute('data-cli-edit')));
@@ -510,6 +522,205 @@
         toast(t('common.delete'));
       });
     });
+  }
+
+  /* ---------- تفاصيل الملف ---------- */
+  async function openDossierDetail(id) {
+    try {
+      const d = await API.dossierDetail(id);
+      if (!d) { toast(t('common.notFound') || 'Not found', true); return; }
+      const l = (ar, fr) => (state.lang === 'ar' ? ar : fr);
+      const { modal, openModal, closeModal } = window.HuissierApp;
+      modal.title.textContent = (d.numero || '') + ' — ' + l('تفاصيل الملف', 'Détails du dossier');
+      let activeTab = 'parties';
+      const render = () => {
+        let body = '';
+        if (activeTab === 'parties') {
+          body = `<div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+            <strong>${l('الأطراف', 'Parties')} (${(d.parties || []).length})</strong>
+            <button class="btn btn-sm btn-primary" id="dd-add-party"><i class="fas fa-plus"></i> ${l('إضافة طرف', 'Ajouter')}</button>
+          </div>
+          <table class="data-table"><thead><tr>
+            <th>${l('الدور', 'Rôle')}</th><th>${l('الاسم', 'Nom')}</th><th>CIN</th><th>${l('الهاتف', 'Tél')}</th><th>${l('البريد', 'Email')}</th><th>${l('إجراءات', 'Actions')}</th>
+          </tr></thead><tbody>${(d.parties || []).map((p) => `<tr>
+            <td><span class="badge">${escapeHtml(p.role || '')}</span></td>
+            <td>${escapeHtml(p.name || '')}</td>
+            <td>${escapeHtml(p.cin || '')}</td>
+            <td>${escapeHtml(p.phone || '')}</td>
+            <td>${escapeHtml(p.email || '')}</td>
+            <td>
+              <button class="row-btn edit" data-ddp-edit='${JSON.stringify(p)}'><i class="fas fa-pen"></i></button>
+              <button class="row-btn del" data-ddp-del="${p.id}"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>`).join('')}</tbody></table>`;
+        } else if (activeTab === 'procedures') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('رقم الإجراء', 'N°')}</th><th>${l('النوع', 'Type')}</th><th>${l('الحالة', 'Statut')}</th><th>${l('المبلغ', 'Montant')}</th>
+          </tr></thead><tbody>${(d.procedures || []).map((p) => `<tr>
+            <td>${escapeHtml(p.procedure_number || '')}</td>
+            <td>${escapeHtml(state.lang === 'fr' ? (p.type_name_fr || '') : (p.type_name_ar || ''))}</td>
+            <td><span class="badge" style="background:${escapeHtml(p.status_color || '#6b7280')};color:#fff">${escapeHtml(state.lang === 'fr' ? (p.status_name_fr || '') : (p.status_name_ar || ''))}</span></td>
+            <td>${p.amount || 0}</td>
+          </tr>`).join('')}</tbody></table>`;
+        } else if (activeTab === 'pvs') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('رقم المحضر', 'N° PV')}</th><th>${l('العنوان', 'Titre')}</th><th>${l('الحالة', 'Statut')}</th>
+          </tr></thead><tbody>${(d.pvs || []).map((p) => `<tr>
+            <td>${escapeHtml(p.pv_number || '')}</td>
+            <td>${escapeHtml(p.title || '')}</td>
+            <td>${escapeHtml(p.status || '')}</td>
+          </tr>`).join('')}</tbody></table>`;
+        } else if (activeTab === 'payments') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('المبلغ', 'Montant')}</th><th>${l('الطريقة', 'Méthode')}</th><th>${l('الحالة', 'Statut')}</th><th>${l('التاريخ', 'Date')}</th>
+          </tr></thead><tbody>${(d.payments || []).map((p) => `<tr>
+            <td>${p.amount || 0}</td>
+            <td>${escapeHtml(state.lang === 'fr' ? (p.method_name_fr || '') : (p.method_name_ar || ''))}</td>
+            <td><span class="badge">${escapeHtml(p.status || '')}</span></td>
+            <td>${fmtDate(p.created_at)}</td>
+          </tr>`).join('')}</tbody></table>`;
+        }
+        modal.body.innerHTML = `
+          <div class="tab-bar" id="dd-tabs">
+            <button class="dtab ${activeTab === 'parties' ? 'active' : ''}" data-dd-tab="parties"><i class="fas fa-users"></i> ${l('الأطراف', 'Parties')} (${(d.parties || []).length})</button>
+            <button class="dtab ${activeTab === 'procedures' ? 'active' : ''}" data-dd-tab="procedures"><i class="fas fa-gavel"></i> ${l('الإجراءات', 'Procédures')} (${(d.procedures || []).length})</button>
+            <button class="dtab ${activeTab === 'pvs' ? 'active' : ''}" data-dd-tab="pvs"><i class="fas fa-file-lines"></i> ${l('المحاضر', 'PV')} (${(d.pvs || []).length})</button>
+            <button class="dtab ${activeTab === 'payments' ? 'active' : ''}" data-dd-tab="payments"><i class="fas fa-coins"></i> ${l('الأداءات', 'Paiements')} (${(d.payments || []).length})</button>
+          </div>
+          <div style="max-height:50vh;overflow-y:auto;margin-top:12px">${body}</div>`;
+        modal.body.querySelectorAll('[data-dd-tab]').forEach((b) => {
+          b.addEventListener('click', () => { activeTab = b.getAttribute('data-dd-tab'); render(); });
+        });
+        modal.body.querySelectorAll('[data-ddp-edit]').forEach((b) => {
+          b.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openPartyModal(d, JSON.parse(b.getAttribute('data-ddp-edit')));
+          });
+        });
+        modal.body.querySelectorAll('[data-ddp-del]').forEach((b) => {
+          b.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm(l('حذف هذا الطرف؟', 'Supprimer cette partie ?'))) return;
+            await API.partyDelete(Number(b.getAttribute('data-ddp-del')));
+            const updated = await API.dossierDetail(id);
+            Object.assign(d, updated);
+            toast(t('common.delete'));
+            render();
+          });
+        });
+        const addBtn = modal.body.querySelector('#dd-add-party');
+        if (addBtn) addBtn.addEventListener('click', () => openPartyModal(d, null));
+      };
+      modal.footer.innerHTML = `<button class="btn btn-ghost" data-modal-close>${t('common.close') || 'Fermer'}</button>`;
+      openModal();
+      modal.footer.querySelector('[data-modal-close]').addEventListener('click', closeModal);
+      render();
+    } catch (e) { toast(e.message, true); }
+  }
+
+  function openPartyModal(dossier, existing) {
+    const isEdit = !!existing;
+    const l = (ar, fr) => (state.lang === 'ar' ? ar : fr);
+    const { modal, openModal, closeModal } = window.HuissierApp;
+    modal.title.textContent = isEdit ? l('تعديل الطرف', 'Modifier la partie') : l('إضافة طرف', 'Ajouter une partie');
+    const roles = ['demandeur', 'defendeur', 'intéressé', 'témoin', 'expert', 'autre'];
+    const roleOpts = roles.map((r) => `<option value="${r}" ${existing && existing.role === r ? 'selected' : ''}>${r}</option>`).join('');
+    modal.body.innerHTML = `
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="form-field"><label>${l('الدور', 'Rôle')}</label><select class="form-input" id="dp-role">${roleOpts}</select></div>
+        <div class="form-field"><label>${l('الاسم الكامل', 'Nom complet')}</label><input class="form-input" id="dp-name" value="${escapeHtml(existing ? existing.name : '')}"></div>
+        <div class="form-field"><label>CIN</label><input class="form-input" id="dp-cin" value="${escapeHtml(existing ? existing.cin : '')}"></div>
+        <div class="form-field"><label>${l('الهاتف', 'Téléphone')}</label><input class="form-input" id="dp-phone" value="${escapeHtml(existing ? existing.phone : '')}"></div>
+        <div class="form-field"><label>${l('البريد', 'Email')}</label><input class="form-input" id="dp-email" value="${escapeHtml(existing ? existing.email : '')}"></div>
+        <div class="form-field"><label>${l('العنوان', 'Adresse')}</label><input class="form-input" id="dp-address" value="${escapeHtml(existing ? existing.address : '')}"></div>
+        <div class="form-field" style="grid-column:1/-1"><label>${l('ملاحظات', 'Notes')}</label><textarea class="form-input" id="dp-notes" rows="2">${escapeHtml(existing ? existing.notes : '')}</textarea></div>
+      </div>`;
+    modal.footer.innerHTML = `<button class="btn btn-ghost" data-modal-cancel>${t('common.cancel')}</button><button class="btn btn-primary" data-modal-ok>${t('common.save')}</button>`;
+    openModal();
+    modal.footer.querySelector('[data-modal-cancel]').addEventListener('click', closeModal);
+    modal.footer.querySelector('[data-modal-ok]').addEventListener('click', async () => {
+      const name = document.getElementById('dp-name').value.trim();
+      if (!name) { toast(l('الاسم مطلوب', 'Nom requis'), true); return; }
+      try {
+        const payload = {
+          id: existing ? existing.id : undefined,
+          dossier_id: dossier.id,
+          role: document.getElementById('dp-role').value,
+          name,
+          cin: document.getElementById('dp-cin').value.trim(),
+          phone: document.getElementById('dp-phone').value.trim(),
+          email: document.getElementById('dp-email').value.trim(),
+          address: document.getElementById('dp-address').value.trim(),
+          notes: document.getElementById('dp-notes').value.trim()
+        };
+        await API.partySave(payload);
+        closeModal();
+        toast(t('common.save'));
+        openDossierDetail(dossier.id);
+      } catch (e) { toast(e.message, true); }
+    });
+  }
+
+  /* ---------- تفاصيل العميل ---------- */
+  async function openClientDetail(id) {
+    try {
+      const c = await API.clientDetail(id);
+      if (!c) { toast(t('common.notFound') || 'Not found', true); return; }
+      const l = (ar, fr) => (state.lang === 'ar' ? ar : fr);
+      const { modal, openModal, closeModal } = window.HuissierApp;
+      modal.title.textContent = (c.name || '') + ' — ' + l('تفاصيل العميل', 'Détails du client');
+      let activeTab = 'dossiers';
+      const render = () => {
+        let body = '';
+        if (activeTab === 'dossiers') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('رقم الملف', 'N°')}</th><th>${l('المدعي', 'Demandeur')}</th><th>${l('المدعى عليه', 'Défendeur')}</th><th>${l('المحكمة', 'Tribunal')}</th><th>${l('الحالة', 'Statut')}</th>
+          </tr></thead><tbody>${(c.partyLinks || []).map((p) => `<tr>
+            <td><strong>${escapeHtml(p.numero || '')}</strong></td>
+            <td>${escapeHtml(p.demandeur || '')}</td>
+            <td>${escapeHtml(p.defendeur || '')}</td>
+            <td>${escapeHtml(p.court || '')}</td>
+            <td>${badge(p.dossier_status || 'autre')}</td>
+          </tr>`).join('')}</tbody></table>`;
+        } else if (activeTab === 'procedures') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('رقم الإجراء', 'N°')}</th><th>${l('النوع', 'Type')}</th><th>${l('الحالة', 'Statut')}</th>
+          </tr></thead><tbody>${(c.procedures || []).map((p) => `<tr>
+            <td>${escapeHtml(p.procedure_number || '')}</td>
+            <td>${escapeHtml(state.lang === 'fr' ? (p.type_name_fr || '') : (p.type_name_ar || ''))}</td>
+            <td><span class="badge">${escapeHtml(p.status || '')}</span></td>
+          </tr>`).join('')}</tbody></table>`;
+        } else if (activeTab === 'payments') {
+          body = `<table class="data-table"><thead><tr>
+            <th>${l('المبلغ', 'Montant')}</th><th>${l('الطريقة', 'Méthode')}</th><th>${l('الحالة', 'Statut')}</th><th>${l('التاريخ', 'Date')}</th>
+          </tr></thead><tbody>${(c.payments || []).map((p) => `<tr>
+            <td>${p.amount || 0}</td>
+            <td>${escapeHtml(state.lang === 'fr' ? (p.method_name_fr || '') : (p.method_name_ar || ''))}</td>
+            <td><span class="badge">${escapeHtml(p.status || '')}</span></td>
+            <td>${fmtDate(p.created_at)}</td>
+          </tr>`).join('')}</tbody></table>`;
+        }
+        modal.body.innerHTML = `
+          <div style="display:flex;gap:12px;margin-bottom:12px;padding:10px;background:var(--bg);border-radius:8px">
+            <div><small class="muted">${l('الهاتف', 'Tél')}</small><br><strong>${escapeHtml(c.phone || '—')}</strong></div>
+            <div><small class="muted">${l('البريد', 'Email')}</small><br><strong>${escapeHtml(c.email || '—')}</strong></div>
+            <div><small class="muted">${l('النوع', 'Type')}</small><br><strong>${escapeHtml(typeLabel('clients.types', c.type))}</strong></div>
+          </div>
+          <div class="tab-bar" id="cd-tabs">
+            <button class="dtab ${activeTab === 'dossiers' ? 'active' : ''}" data-cd-tab="dossiers"><i class="fas fa-folder"></i> ${l('الملفات', 'Dossiers')} (${(c.partyLinks || []).length})</button>
+            <button class="dtab ${activeTab === 'procedures' ? 'active' : ''}" data-cd-tab="procedures"><i class="fas fa-gavel"></i> ${l('الإجراءات', 'Procédures')} (${(c.procedures || []).length})</button>
+            <button class="dtab ${activeTab === 'payments' ? 'active' : ''}" data-cd-tab="payments"><i class="fas fa-coins"></i> ${l('الأداءات', 'Paiements')} (${(c.payments || []).length})</button>
+          </div>
+          <div style="max-height:50vh;overflow-y:auto;margin-top:12px">${body}</div>`;
+        modal.body.querySelectorAll('[data-cd-tab]').forEach((b) => {
+          b.addEventListener('click', () => { activeTab = b.getAttribute('data-cd-tab'); render(); });
+        });
+      };
+      modal.footer.innerHTML = `<button class="btn btn-ghost" data-modal-close>${t('common.close') || 'Fermer'}</button>`;
+      openModal();
+      modal.footer.querySelector('[data-modal-close]').addEventListener('click', closeModal);
+      render();
+    } catch (e) { toast(e.message, true); }
   }
 
   /* ---------- أمان ---------- */
@@ -654,8 +865,14 @@
 
     // Dossiers page
     document.getElementById('dossier-add').addEventListener('click', () => openDossierModal(null));
-    document.getElementById('dossier-search').addEventListener('input', (e) => {
+    document.getElementById('dossier-search').addEventListener('input', async (e) => {
       dossierFilter = e.target.value;
+      if (dossierFilter.length >= 2) {
+        try {
+          const results = await API.dossierSearch(dossierFilter);
+          state.dossiers = results;
+        } catch (err) { /* fallback to client-side */ }
+      }
       renderDossiers();
     });
     document.getElementById('dossier-export').addEventListener('click', async () => {
@@ -665,8 +882,14 @@
 
     // Clients page
     document.getElementById('client-add').addEventListener('click', () => openClientModal(null));
-    document.getElementById('client-search').addEventListener('input', (e) => {
+    document.getElementById('client-search').addEventListener('input', async (e) => {
       clientFilter = e.target.value;
+      if (clientFilter.length >= 2) {
+        try {
+          const results = await API.clientSearch(clientFilter);
+          state.clients = results;
+        } catch (err) { /* fallback to client-side */ }
+      }
       renderClients();
     });
     document.getElementById('client-export').addEventListener('click', async () => {

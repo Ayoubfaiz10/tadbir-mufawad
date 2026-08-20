@@ -451,6 +451,8 @@ input, select, textarea:focus { outline: none; }
 .settings-tab-content { display: none; }
 .settings-tab-content.active { display: block; }
 .pt-field-row { background: var(--bg-2); padding: 8px; border-radius: 6px; }
+.clickable-row { cursor: pointer; transition: background .15s; }
+.clickable-row:hover { background: var(--bg-2); }
 .hint { font-size: 0.85rem; color: var(--text-3); line-height: 1.6; }
 
 /* ---------- Modal ---------- */

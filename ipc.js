@@ -117,8 +117,12 @@ function register() {
     address: str(party.address),
     phone: str(party.phone),
     email: str(party.email),
-    notes: str(party.notes)
+    notes: str(party.notes),
+    client_id: int(party.client_id) || null
   }));
+  genHandle('app:partyDelete', (id) => dossierService.deleteParty(int(id)));
+  genHandle('app:partyLinkClient', (input) => dossierService.linkPartyToClient(int(input.partyId), int(input.clientId)));
+  genHandle('app:dossierDetail', (id) => dossierService.getDetail(int(id)));
 
   /* ---------- العملاء ---------- */
   genHandle('app:saveClient', (c) => clientService.save({
@@ -130,6 +134,9 @@ function register() {
     notes: str(c.notes)
   }));
   genHandle('app:deleteClient', (id) => clientService.remove(int(id)));
+  genHandle('app:clientDetail', (id) => clientService.getDetail(int(id)));
+  genHandle('app:clientSearch', (q) => clientService.searchAll(str(q), 30));
+  genHandle('app:clientFindByCin', (cin) => clientService.findByCin(str(cin)));
 
   /* ---------- تصدير CSV ---------- */
   genHandle('app:exportCsv', async (kind) => {
