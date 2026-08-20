@@ -445,6 +445,12 @@ input, select, textarea:focus { outline: none; }
 .form-status { font-size: 0.82rem; color: var(--success); }
 
 .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.settings-header { margin-bottom: 12px; }
+.settings-header h2 { margin: 0; }
+.settings-header .subtitle { color: var(--text-3); font-size: .85rem; margin: 2px 0 0; }
+.settings-tab-content { display: none; }
+.settings-tab-content.active { display: block; }
+.pt-field-row { background: var(--bg-2); padding: 8px; border-radius: 6px; }
 .hint { font-size: 0.85rem; color: var(--text-3); line-height: 1.6; }
 
 /* ---------- Modal ---------- */

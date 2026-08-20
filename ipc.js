@@ -237,6 +237,13 @@ function register() {
     nameAr: str(s.nameAr), nameFr: str(s.nameFr), color: str(s.color), active: bool(s.active)
   }));
   genHandle('config:pvTemplates', () => configService.listPvTemplates());
+  genHandle('config:typeUpdate', (input) => configService.updateType(int(input.id), {
+    nameAr: str(input.nameAr), nameFr: str(input.nameFr),
+    descriptionAr: str(input.descriptionAr || ''), descriptionFr: str(input.descriptionFr || ''),
+    active: input.active !== false, categoryId: int(input.categoryId)
+  }));
+  genHandle('config:transitionAdd', (t) => configService.addTransition(str(t.fromStatus), str(t.toStatus)));
+  genHandle('config:transitionDelete', (id) => configService.deleteTransition(int(id)));
 
   /* ---------- الإجراءات ---------- */
   genHandle('proc:list', (f) => procedureService.list({
@@ -631,6 +638,15 @@ function register() {
   genHandle('pv:downloadDoc', (id) => pvPdfService.downloadDoc(int(id)));
   genHandle('pv:printDoc', (id) => pvPdfService.printDoc(int(id)));
   genHandle('pv:delete', (id) => pvService.deletePv(int(id)));
+  genHandle('pv:typeUpdate', (input) => pvService.updatePvType({
+    id: input.id ? int(input.id) : undefined,
+    code: input.code ? str(input.code) : undefined,
+    nameAr: str(input.nameAr), nameFr: str(input.nameFr),
+    active: int(input.active)
+  }));
+  genHandle('pv:statusUpdate', (input) => pvService.updatePvStatus({
+    code: str(input.code), nameAr: str(input.nameAr), nameFr: str(input.nameFr), color: str(input.color)
+  }));
 
   /* ---------- السجلات المهنية (Professional Registers) ---------- */
   const regFilters = (f) => ({
@@ -836,6 +852,15 @@ function register() {
   genHandle('wf:revertStage', (procedureId, stageCode, reason) =>
     workflowService.revertStage(int(procedureId), str(stageCode, 50), str(reason, 2000)));
   genHandle('wf:stats', () => workflowService.workflowStats());
+
+  /* ---------- النسخ الاحتياطي ---------- */
+  const backupService = require('./services/backupService');
+  const dbPath = dbCore.getDbPath ? dbCore.getDbPath() : path.join(app.getPath('userData'), 'huissier.db');
+  genHandle('backup:list', () => backupService.list(app));
+  genHandle('backup:create', () => backupService.create(app, dbPath));
+  genHandle('backup:delete', (name) => backupService.remove(app, str(name)));
+  genHandle('backup:restore', (name) => backupService.restore(app, str(name), dbPath));
+  genHandle('backup:restoreUpload', (input) => backupService.restoreFromBuffer(app, input.buffer, str(input.name), dbPath));
 }
 
 module.exports = { register };

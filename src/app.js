@@ -553,6 +553,8 @@
     document.getElementById('office-address').value = o.address || '';
     document.getElementById('office-phone').value = o.phone || '';
     document.getElementById('office-number').value = o.registration_number || o.number || '';
+    if (document.getElementById('office-email')) document.getElementById('office-email').value = o.email || '';
+    if (document.getElementById('office-ice')) document.getElementById('office-ice').value = o.ice || '';
   }
 
   function saveOfficeSettings(e) {
@@ -561,7 +563,9 @@
       name: document.getElementById('office-name').value.trim(),
       address: document.getElementById('office-address').value.trim(),
       phone: document.getElementById('office-phone').value.trim(),
-      registration_number: document.getElementById('office-number').value.trim()
+      registration_number: document.getElementById('office-number').value.trim(),
+      email: document.getElementById('office-email')?.value.trim() || '',
+      ice: document.getElementById('office-ice')?.value.trim() || ''
     };
     try { localStorage.setItem('huissier-office', JSON.stringify(o)); } catch (e) {}
     API.settingsSaveOffice(o).catch(() => {});
@@ -944,6 +948,7 @@
     if (window.FinanceModule && window.FinanceModule.init) await window.FinanceModule.init();
     if (window.RegistersModule && window.RegistersModule.init) await window.RegistersModule.init();
     if (window.ArchiveModule && window.ArchiveModule.init) await window.ArchiveModule.init();
+    if (window.SettingsModule && window.SettingsModule.init) await window.SettingsModule.init();
     updateSecurityCard();
     renderUsers();
     goTo('dashboard');

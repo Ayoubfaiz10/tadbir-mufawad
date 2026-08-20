@@ -28,11 +28,32 @@ function getPvType(id) {
   return get('SELECT * FROM pv_types WHERE id = ?', [id]);
 }
 
+function updatePvType({ id, code, nameAr, nameFr, active }) {
+  if (id) {
+    run('UPDATE pv_types SET name_ar = ?, name_fr = ?, active = ? WHERE id = ?', [nameAr, nameFr, active, id]);
+  } else if (code) {
+    const existing = get('SELECT id FROM pv_types WHERE code = ?', [code]);
+    if (existing) {
+      run('UPDATE pv_types SET name_ar = ?, name_fr = ?, active = ? WHERE code = ?', [nameAr, nameFr, active, code]);
+    } else {
+      run('INSERT INTO pv_types (code, name_ar, name_fr, active) VALUES (?,?,?,?)', [code, nameAr, nameFr, active]);
+    }
+  }
+  audit.log({ action: 'pv_type.updated', entity: 'pv_type', entityId: id || 0, metadata: { code, nameAr, nameFr } });
+  return true;
+}
+
 /* ---------- حالات المحضر (قابلة للتهيئة) ---------- */
 function listPvStatuses(activeOnly = true) {
   return all(
     `SELECT * FROM pv_statuses ${activeOnly ? 'WHERE active = 1' : ''} ORDER BY sort_order`
   );
+}
+
+function updatePvStatus({ code, nameAr, nameFr, color }) {
+  run('UPDATE pv_statuses SET name_ar = ?, name_fr = ?, color = ? WHERE code = ?', [nameAr, nameFr, color, code]);
+  audit.log({ action: 'pv_status.updated', entity: 'pv_status', entityId: 0, metadata: { code, nameAr, nameFr, color } });
+  return true;
 }
 
 function listPvTransitions() {
@@ -516,7 +537,7 @@ function renderHtml(id, lang) {
 
 module.exports = {
   generatePvNumber,
-  listPvTypes, getPvType, listPvStatuses, listPvTransitions, getStatus,
+  listPvTypes, getPvType, updatePvType, listPvStatuses, updatePvStatus, listPvTransitions, getStatus,
   allowedTransitions, canTransition,
   createPv, getDetail, list, stats, updateMeta, saveContent,
   refreshFromTemplate, applyStatus, createCopies, getCopies, setCopyStatus,

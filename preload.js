@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('appAPI', {
   configStatusAdd: expose('config:statusAdd'),
   configStatusUpdate: expose('config:statusUpdate'),
   configPvTemplates: expose('config:pvTemplates'),
+  configTypeUpdate: expose('config:typeUpdate'),
+  configTransitionAdd: expose('config:transitionAdd'),
+  configTransitionDelete: expose('config:transitionDelete'),
 
   // الإجراءات
   procList: expose('proc:list'),
@@ -193,6 +196,8 @@ contextBridge.exposeInMainWorld('appAPI', {
   pvDownloadDoc: expose('pv:downloadDoc'),
   pvPrintDoc: expose('pv:printDoc'),
   pvDelete: expose('pv:delete'),
+  pvTypeUpdate: expose('pv:typeUpdate'),
+  pvStatusUpdate: expose('pv:statusUpdate'),
 
   onMenuExport: (cb) => ipcRenderer.on('menu:export', (_e, kind) => cb(kind)),
 
@@ -227,5 +232,12 @@ contextBridge.exposeInMainWorld('appAPI', {
   wfStages: expose('wf:stages'),
   wfCompleteStage: expose('wf:completeStage'),
   wfRevertStage: expose('wf:revertStage'),
-  wfStats: expose('wf:stats')
+  wfStats: expose('wf:stats'),
+
+  /* ---------- النسخ الاحتياطي ---------- */
+  backupList: expose('backup:list'),
+  backupCreate: expose('backup:create'),
+  backupDelete: expose('backup:delete'),
+  backupRestore: expose('backup:restore'),
+  backupRestoreUpload: expose('backup:restoreUpload')
 });

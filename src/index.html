@@ -780,75 +780,232 @@
 
       <!-- ============ PAGE: SETTINGS ============ -->
       <section class="page" id="page-settings">
-        <div class="settings-grid">
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="settings.office">بيانات المكتب</h3></div>
-            <form id="office-form" class="form-grid">
-              <label><span data-i18n="settings.officeName">اسم المكتب</span><input type="text" id="office-name"></label>
-              <label><span data-i18n="settings.officeAddress">العنوان</span><input type="text" id="office-address"></label>
-              <label><span data-i18n="settings.officePhone">الهاتف</span><input type="text" id="office-phone"></label>
-              <label><span data-i18n="settings.officeAppNumber">رقم الترسيم</span><input type="text" id="office-number"></label>
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary" id="office-save"><i class="fas fa-save"></i><span data-i18n="settings.save">حفظ</span></button>
-                <span class="form-status" id="office-status"></span>
-              </div>
-            </form>
-          </div>
+        <div class="settings-header">
+          <h2 data-i18n="settings.title">الإعدادات</h2>
+          <p class="subtitle" data-i18n="settings.subtitle">إدارة المكتب والنظام</p>
+        </div>
+        <div class="tab-bar" id="settings-tabs">
+          <button class="dtab active" data-settings-tab="general"><i class="fas fa-building"></i> <span data-i18n="settings.tabGeneral">المكتب</span></button>
+          <button class="dtab" data-settings-tab="types"><i class="fas fa-list-check"></i> <span data-i18n="settings.tabTypes">الأنواع</span></button>
+          <button class="dtab" data-settings-tab="statuses"><i class="fas fa-arrows-turn-to-dots"></i> <span data-i18n="settings.tabStatuses">الحالات</span></button>
+          <button class="dtab" data-settings-tab="pv"><i class="fas fa-file-lines"></i> <span data-i18n="settings.tabPV">المحاضر</span></button>
+          <button class="dtab" data-settings-tab="finance"><i class="fas fa-coins"></i> <span data-i18n="settings.tabFinance">المالية</span></button>
+          <button class="dtab" data-settings-tab="users"><i class="fas fa-users"></i> <span data-i18n="settings.tabUsers">المستخدمون</span></button>
+          <button class="dtab" data-settings-tab="backup"><i class="fas fa-database"></i> <span data-i18n="settings.tabBackup">النسخ الاحتياطي</span></button>
+        </div>
 
-          <div class="card">
-            <div class="card-header"><h3 data-i18n="settings.theme">المظهر</h3></div>
-            <div class="theme-options">
-              <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i><span data-i18n="settings.light">فاتح</span></button>
-              <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i><span data-i18n="settings.dark">داكن</span></button>
+        <!-- ===== Tab: General ===== -->
+        <div class="settings-tab-content active" id="settings-tab-general">
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-header"><h3 data-i18n="settings.office">بيانات المكتب</h3></div>
+              <form id="office-form" class="form-grid">
+                <label><span data-i18n="settings.officeName">اسم المكتب</span><input type="text" id="office-name"></label>
+                <label><span data-i18n="settings.officeAddress">العنوان</span><input type="text" id="office-address"></label>
+                <label><span data-i18n="settings.officePhone">الهاتف</span><input type="text" id="office-phone"></label>
+                <label><span data-i18n="settings.officeAppNumber">رقم الترسيم</span><input type="text" id="office-number"></label>
+                <label><span data-i18n="settings.officeEmail">البريد الإلكتروني</span><input type="email" id="office-email"></label>
+                <label><span data-i18n="settings.officeIce">ICE / IF</span><input type="text" id="office-ice"></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary" id="office-save"><i class="fas fa-save"></i><span data-i18n="settings.save">حفظ</span></button>
+                  <span class="form-status" id="office-status"></span>
+                </div>
+              </form>
             </div>
-            <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.language">اللغة</h3></div>
-            <p class="hint" data-i18n="settings.languageHint">تبديل اللغة يتم أيضاً من الشريط العلوي</p>
-            <div class="data-note">
-              <i class="fas fa-database"></i>
-              <div>
-                <strong data-i18n="settings.data">البيانات والحفظ</strong>
-                <p data-i18n="settings.dataHint">تُحفظ البيانات تلقائياً في مجلد بيانات التطبيق (SQLite).</p>
+            <div class="card">
+              <div class="card-header"><h3 data-i18n="settings.theme">المظهر</h3></div>
+              <div class="theme-options">
+                <button class="theme-option" data-theme="light"><i class="fas fa-sun"></i><span data-i18n="settings.light">فاتح</span></button>
+                <button class="theme-option" data-theme="dark"><i class="fas fa-moon"></i><span data-i18n="settings.dark">داكن</span></button>
               </div>
+              <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.language">اللغة</h3></div>
+              <p class="hint" data-i18n="settings.languageHint">تبديل اللغة يتم أيضاً من الشريط العلوي</p>
+              <div class="data-note">
+                <i class="fas fa-database"></i>
+                <div>
+                  <strong data-i18n="settings.data">البيانات والحفظ</strong>
+                  <p data-i18n="settings.dataHint">تُحفظ البيانات تلقائياً في مجلد بيانات التطبيق (SQLite).</p>
+                </div>
+              </div>
+              <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.about">حول التطبيق</h3></div>
+              <p class="hint" data-i18n="settings.aboutText">إصدار 0.1.0 — بنية أساسية.</p>
             </div>
-            <div class="card-header" style="margin-top:22px"><h3 data-i18n="settings.about">حول التطبيق</h3></div>
-            <p class="hint" data-i18n="settings.aboutText">إصدار 0.1.0 — بنية أساسية.</p>
           </div>
+        </div>
 
-          <div class="card" id="users-card">
-            <div class="card-header"><h3 data-i18n="users.title">المستخدمون</h3></div>
-            <p class="hint" id="users-hint"></p>
-            <form id="user-form" class="form-grid">
-              <label><span data-i18n="users.username">اسم المستخدم</span><input type="text" id="user-username" autocomplete="off"></label>
-              <label><span data-i18n="users.displayName">الاسم الكامل</span><input type="text" id="user-displayname" autocomplete="off"></label>
-              <label><span data-i18n="users.role">الدور</span><select id="user-role"><option value="agent" data-i18n="auth.role.agent">وكيل المكتب</option><option value="admin" data-i18n="auth.role.admin">مدير</option></select></label>
-              <label><span data-i18n="users.initialPassword">كلمة المرور الأولية</span><input type="password" id="user-password" autocomplete="new-password"></label>
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i><span data-i18n="users.addPerson">إضافة مستخدم</span></button>
-                <span class="form-status" id="user-form-status"></span>
-              </div>
-            </form>
-            <div class="table-wrap" style="margin-top:14px">
+        <!-- ===== Tab: Procedure Types ===== -->
+        <div class="settings-tab-content" id="settings-tab-types">
+          <div class="card">
+            <div class="card-header" style="justify-content:space-between">
+              <h3 data-i18n="settings.ptypesTitle">أنواع الإجراءات</h3>
+              <button class="btn btn-sm btn-primary" id="ptype-add"><i class="fas fa-plus"></i> <span data-i18n="settings.ptypeAdd">نوع جديد</span></button>
+            </div>
+            <div class="table-wrap">
               <table class="data-table">
-                <thead><tr><th data-i18n="users.username">اسم المستخدم</th><th data-i18n="users.displayName">الاسم الكامل</th><th data-i18n="users.role">الدور</th><th data-i18n="users.status">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
-                <tbody id="users-tbody"></tbody>
+                <thead><tr>
+                  <th>Kod</th><th data-i18n="settings.ptypeName">الاسم</th><th data-i18n="settings.ptypeCategory">التصنيف</th><th data-i18n="settings.ptypeFields">الحقول</th><th data-i18n="settings.ptypeStatus">الحالة</th><th data-i18n="common.actions">إجراءات</th>
+                </tr></thead>
+                <tbody id="ptypes-tbody"></tbody>
               </table>
             </div>
           </div>
+        </div>
 
-          <div class="card" id="security-card">
-            <div class="card-header"><h3 data-i18n="settings.security">الأمان</h3></div>
-            <p class="hint" id="login-current-user"></p>
-            <form id="password-form" class="form-grid" style="grid-template-columns:1fr">
-              <label><span data-i18n="settings.currentPassword">كلمة المرور الحالية</span><input type="password" id="pw-current" autocomplete="current-password"></label>
-              <label><span data-i18n="settings.newPassword">كلمة المرور الجديدة (6 أحرف على الأقل)</span><input type="password" id="pw-new" autocomplete="new-password"></label>
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i><span data-i18n="settings.savePassword">تغيير كلمة المرور</span></button>
-                <span class="form-status" id="pw-status"></span>
+        <!-- ===== Tab: Statuses & Transitions ===== -->
+        <div class="settings-tab-content" id="settings-tab-statuses">
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.statusesTitle">حالات الإجراءات</h3>
+                <button class="btn btn-sm btn-primary" id="status-add"><i class="fas fa-plus"></i> <span data-i18n="settings.statusAdd">حالة جديدة</span></button>
               </div>
-            </form>
-            <button class="btn btn-ghost" id="logout-btn" style="margin-top:12px"><i class="fas fa-right-from-bracket"></i><span data-i18n="settings.logout">تسجيل الخروج</span></button>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Kod</th><th data-i18n="settings.statusName">الاسم</th><th data-i18n="settings.statusColor">اللون</th><th data-i18n="settings.ptypeStatus">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="statuses-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.transitionsTitle">الانتقالات المسموحة</h3>
+                <button class="btn btn-sm btn-primary" id="transition-add"><i class="fas fa-plus"></i> <span data-i18n="settings.transitionAdd">انتقال جديد</span></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th data-i18n="settings.transitionFrom">من</th><th data-i18n="settings.transitionTo">إلى</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="transitions-tbody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- ===== Tab: PV Types ===== -->
+        <div class="settings-tab-content" id="settings-tab-pv">
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.pvTypesTitle">أنواع المحاضر</h3>
+                <button class="btn btn-sm btn-primary" id="pvtype-add"><i class="fas fa-plus"></i> <span data-i18n="settings.pvTypeAdd">نوع جديد</span></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Kod</th><th data-i18n="settings.pvTypeName">الاسم</th><th data-i18n="settings.ptypeStatus">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="pvtypes-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.pvStatusesTitle">حالات المحاضر</h3>
+                <button class="btn btn-sm btn-primary" id="pvstatus-add"><i class="fas fa-plus"></i> <span data-i18n="settings.pvStatusAdd">حالة جديدة</span></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Kod</th><th data-i18n="settings.statusName">الاسم</th><th data-i18n="settings.statusColor">اللون</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="pvstatuses-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Tab: Finance ===== -->
+        <div class="settings-tab-content" id="settings-tab-finance">
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.methodsTitle">طرق الدفع</h3>
+                <button class="btn btn-sm btn-primary" id="paymethod-add"><i class="fas fa-plus"></i> <span data-i18n="settings.methodAdd">طريقة جديدة</span></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Kod</th><th data-i18n="settings.methodName">الاسم</th><th data-i18n="settings.ptypeStatus">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="paymethods-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 data-i18n="settings.tariffsTitle">التعريفات</h3>
+                <button class="btn btn-sm btn-primary" id="tariff-add"><i class="fas fa-plus"></i> <span data-i18n="settings.tariffAdd">تعريفة جديدة</span></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Kod</th><th data-i18n="settings.tariffName">الاسم</th><th data-i18n="settings.tariffAmount">المبلغ</th><th data-i18n="settings.tariffCurrency">العملة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="tariffs-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Tab: Users & Security ===== -->
+        <div class="settings-tab-content" id="settings-tab-users">
+          <div class="settings-grid">
+            <div class="card" id="users-card">
+              <div class="card-header"><h3 data-i18n="users.title">المستخدمون</h3></div>
+              <p class="hint" id="users-hint"></p>
+              <form id="user-form" class="form-grid">
+                <label><span data-i18n="users.username">اسم المستخدم</span><input type="text" id="user-username" autocomplete="off"></label>
+                <label><span data-i18n="users.displayName">الاسم الكامل</span><input type="text" id="user-displayname" autocomplete="off"></label>
+                <label><span data-i18n="users.role">الدور</span><select id="user-role"><option value="agent" data-i18n="auth.role.agent">وكيل المكتب</option><option value="admin" data-i18n="auth.role.admin">مدير</option></select></label>
+                <label><span data-i18n="users.initialPassword">كلمة المرور الأولية</span><input type="password" id="user-password" autocomplete="new-password"></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i><span data-i18n="users.addPerson">إضافة مستخدم</span></button>
+                  <span class="form-status" id="user-form-status"></span>
+                </div>
+              </form>
+              <div class="table-wrap" style="margin-top:14px">
+                <table class="data-table">
+                  <thead><tr><th data-i18n="users.username">اسم المستخدم</th><th data-i18n="users.displayName">الاسم الكامل</th><th data-i18n="users.role">الدور</th><th data-i18n="users.status">الحالة</th><th data-i18n="common.actions">إجراءات</th></tr></thead>
+                  <tbody id="users-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card" id="security-card">
+              <div class="card-header"><h3 data-i18n="settings.security">الأمان</h3></div>
+              <p class="hint" id="login-current-user"></p>
+              <form id="password-form" class="form-grid" style="grid-template-columns:1fr">
+                <label><span data-i18n="settings.currentPassword">كلمة المرور الحالية</span><input type="password" id="pw-current" autocomplete="current-password"></label>
+                <label><span data-i18n="settings.newPassword">كلمة المرور الجديدة (6 أحرف على الأقل)</span><input type="password" id="pw-new" autocomplete="new-password"></label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i><span data-i18n="settings.savePassword">تغيير كلمة المرور</span></button>
+                  <span class="form-status" id="pw-status"></span>
+                </div>
+              </form>
+              <button class="btn btn-ghost" id="logout-btn" style="margin-top:12px"><i class="fas fa-right-from-bracket"></i><span data-i18n="settings.logout">تسجيل الخروج</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Tab: Backup & Restore ===== -->
+        <div class="settings-tab-content" id="settings-tab-backup">
+          <div class="settings-grid">
+            <div class="card">
+              <div class="card-header"><h3><i class="fas fa-download"></i> <span data-i18n="settings.backupTitle">إنشاء نسخة احتياطية</span></h3></div>
+              <p class="hint" data-i18n="settings.backupDesc">انسخ قاعدة البيانات الحالية إلى ملف خارجي آمن.</p>
+              <div style="margin-top:14px">
+                <button class="btn btn-primary" id="backup-create"><i class="fas fa-download"></i> <span data-i18n="settings.backupCreate">إنشاء نسخة احتياطية</span></button>
+              </div>
+              <div id="backup-list" style="margin-top:18px"></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3><i class="fas fa-upload"></i> <span data-i18n="settings.restoreTitle">استرجاع نسخة احتياطية</span></h3></div>
+              <p class="hint" data-i18n="settings.restoreDesc">استرجاع قاعدة البيانات من نسخة احتياطية سابقة. <strong data-i18n="settings.restoreWarning">سيؤدي هذا إلى استبدال جميع البيانات الحالية!</strong></p>
+              <div style="margin-top:14px">
+                <label class="btn btn-ghost" style="cursor:pointer">
+                  <i class="fas fa-upload"></i> <span data-i18n="settings.restoreSelect">اختر ملف النسخة الاحتياطية</span>
+                  <input type="file" id="restore-file" accept=".db,.sqlite" hidden>
+                </label>
+                <button class="btn btn-danger" id="restore-btn" disabled style="margin-inline-start:8px"><i class="fas fa-rotate"></i> <span data-i18n="settings.restoreBtn">استرجاع</span></button>
+              </div>
+              <p class="hint" id="restore-status" style="margin-top:12px"></p>
+            </div>
+          </div>
+        </div>
+
       </section>
 
     </main>
@@ -1099,5 +1256,6 @@
   <script src="financeUi.js"></script>
   <script src="registersUi.js"></script>
   <script src="archiveUi.js"></script>
+  <script src="settingsUi.js"></script>
 </body>
 </html>

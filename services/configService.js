@@ -27,6 +27,22 @@ function listTransitions() {
   return all('SELECT * FROM procedure_status_transitions ORDER BY id');
 }
 
+function addTransition(fromStatus, toStatus) {
+  if (!fromStatus || !toStatus) throw new Error('VALIDATION:transition:missingRequired');
+  if (fromStatus === toStatus) throw new Error('VALIDATION:transition:sameStatus');
+  const exists = get('SELECT id FROM procedure_status_transitions WHERE from_status = ? AND to_status = ?', [fromStatus, toStatus]);
+  if (exists) throw new Error('VALIDATION:transition:exists');
+  run('INSERT INTO procedure_status_transitions (from_status, to_status) VALUES (?,?)', [fromStatus, toStatus]);
+  audit.log({ action: 'transition.created', entity: 'transition', entityId: 0, metadata: { fromStatus, toStatus } });
+  return true;
+}
+
+function deleteTransition(id) {
+  run('DELETE FROM procedure_status_transitions WHERE id = ?', [id]);
+  audit.log({ action: 'transition.deleted', entity: 'transition', entityId: id });
+  return true;
+}
+
 function addStatus(code, nameAr, nameFr, color) {
   run('INSERT INTO procedure_statuses (code, name_ar, name_fr, color) VALUES (?,?,?,?)', [code, nameAr, nameFr, color]);
   audit.log({ action: 'status.created', entity: 'status', entityId: 0, metadata: { code } });
@@ -158,7 +174,7 @@ function configSnapshot(scope = 'all') {
 
 module.exports = {
   listCategories, listStatuses, listTransitions, getStatus,
-  addStatus, updateStatus,
+  addStatus, updateStatus, addTransition, deleteTransition,
   getType, getTypeByCode, listTypesByCategory, listTypesFull, listFieldsForType,
   addType, updateType, listPvTemplates, configSnapshot,
 };

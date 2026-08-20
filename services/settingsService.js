@@ -6,11 +6,11 @@
 
 const { get, all, run, tx } = require('../db/database').helpers;
 
-const OFFICE_KEYS = ['name', 'address', 'phone', 'registration_number'];
+const OFFICE_KEYS = ['name', 'address', 'phone', 'registration_number', 'email', 'ice'];
 
 function getOffice() {
   const rows = all("SELECT key, value FROM meta WHERE key LIKE 'office.%'");
-  const o = { name: '', address: '', phone: '', registration_number: '' };
+  const o = { name: '', address: '', phone: '', registration_number: '', email: '', ice: '' };
   rows.forEach((r) => {
     const k = r.key.replace('office.', '');
     if (k in o) o[k] = r.value || '';
